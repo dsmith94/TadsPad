@@ -1,0 +1,23 @@
+contents
+The Floor object needs to appear to share the contents of the player character's room (or other enclosing container) for certain purposes (such as disambiguating by container or the TakeFrom command), but nothing is really moved into or out of a Floor).
+
+contentsListed
+By default we probably want to keep the description of a Floor object as minimalistic as possible to discourage players from trying to interact with it, so we won't listed the 'contents' of a Floor when it's examined. This can of course be overridden if desired.
+
+contType
+A Floor is something we can put things on.
+
+decorationActions
+We can examine a Floor or take something from it, but other actions are ruled out. A Floor should generally be treated as a Decoration object rather than something with which any extensive interaction is allowed.
+
+initialLocationClass
+By default, every room has a floor.
+
+isDecoration
+no description available
+
+isFixed
+A Floor is a Decoration, but since the extras.t module is optional we have to define is as isFixed = true and isDecoration = true.
+
+isInitiallyIn (obj)
+We narrow down our list of locations to those Rooms that actually define this Floor as their floorObj. Some rooms may wish to define a custom floorObj, and some (e.g. those representing the top of a mast or tree) may want to have no floorObj at all. 

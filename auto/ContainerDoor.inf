@@ -1,0 +1,8 @@
+cannotTakeMsg
+no description available
+
+isOpen
+We're open if our location's container is open
+
+remapIn
+Redirect all container-appropriate actions to the remapIn object of our location, so that opening, closing, locking and unlocking this door will perform the equivalent action on our container object.

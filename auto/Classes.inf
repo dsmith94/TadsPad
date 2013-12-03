@@ -1,0 +1,152 @@
+Classes prediction for object definition
+used when we define a new object
+
+GameMainDef
+no desc
+
+GameID
+no desc
+
+Thing
+Thing is the base class for all game objects that represent physical objects which can be interacted with in the game world. All such physical objects are either Things or based on a subclass of Thing. 
+
+Actor
+An Actor is an object representing a living being (or something that behaves like a living being, such as an intelligent robot), with which the player character can potentially converse, and which can move around and pursue his/her/its own agenda. This class is intended for the implementation of NPCs (non-player characters).
+
+Button
+A Button is an object that does something when pressed.
+
+Consultable
+A Consultable is an object like a book, timetable or computer that can be used to look things up in through commands such as LOOK UP SELVAGEE IN DICTIONARY or CONSULT BLUE BOOK ABOUT RABBITS.
+
+Container
+A Container is a Thing that other things can be put inside.
+
+Booth
+A Booth is a Container that the player character (and other actors) can get in.
+
+OpenableContainer
+An OpenableContainer is a Container that can be opened and closed.
+
+KeyedContainer
+A KeyedContainer is an OpenableContainer that can be locked and unlocked only with the aid of a key.
+
+LockableContainer
+A LockableContainer is an OpenableContainer that can be locked and unlocked without the aid of a key.
+
+Door
+A Door is something that can be open and closed (and optionally locked), and which must be open to allow travel through. Doors are defined in pairs, with each Door representing one side of the door and pointing to the other.
+
+SecretDoor
+A SecretDoor is a Door that doesn't appear to be a door when it's closed, and which must be opened by some external mechanism (other than by an OPEN command.)
+
+Fixture
+A Fixture is a Thing that can't be picked up and carried around (and so can't be put anywhere either).
+
+CollectiveGroup
+A CollectiveGroup is a an object that can represent a set of other objects for particular actions. For any of the objects in the myObjects list the CollectiveGroup will handle any of the actions in the myActions list; all the other actions will be handled by the individual objects.
+
+Component
+A Component is an object that's (usually permanently) part of something else, like the handle of a suitcase or a dial on a safe.
+
+ContainerDoor
+A ContainerDoor can be used as part of a multiply-containing object to represent the door of the container-like object defined on its remapIn property. A ContainerDoor is open or closed if the underlying container is open or closed, and remaps all container-appropriate actions to the remapIn object of its location.
+
+Decoration
+A Decoration is a Fixture that can only be EXAMINEd. Any other action results in the display of its notImportantMsg. It's normally used for objects that are purely scenery.
+
+Distant
+A Distant is a Decoration that's considered too far away to be interacted with by any command other than EXAMINE.
+
+Unthing
+An Unthing is an object that represents the absence of a thing.
+
+Enterable
+An Enterable is a Thing one can go inside. It is usually used to represent the exterior of an object like a building, so that going inside will take the actor to a new location representing the interior.
+
+Heavy
+A Heavy is a Fixture that's too heavy to be picked up. We make Heavy a Fixture rather than an Immovable since it should normally be obvious that something is too heavy to be moved.
+
+Settable
+A Settable is anything that can be set to particular values, such as a slider control or a dial. Various types of dial descending from Settable are defined below.
+
+Dial
+A Dial is Simply a Settable we can turn as well as set.
+
+NumberedDial
+A Numbered Dial is a Dial that can be turned to any integer in a defined range of numbers.
+
+Floor
+The Floor Class is used to provide a floor or ground object to each room that wants one (by default, every Room). While this serves the secondary purpose of allowing the player to refer to the ground/floor of the current location (which is nearly always implicitly present), it's primary purpose is to allow the parser to refer to the floor/ground when it wants to distinguish items directly in a Room (and hence notionally on the ground) from those in or on some other object.
+
+Food
+A Food is a Thing that can be eaten.
+
+Immovable
+An Immovable is something that can't be picked up, although it may not be immediately obvious that it can't be moved. For that reason we rule out taking an Immovable at the check stage rather than the verify stage (this is what distinquished an Immovable from a Fixture).
+
+Key
+A Key is any object that can be used to lock or lock selected items whose lockabilty is lockableWithKey. We define all the special handling on the Key class rather than on the items to be locked and/or unlocked.
+
+Lever
+A Lever is an object that can be in one of two positions: pulled (isPulled = true) or pushed (isPulled = nil), and which can be pulled and pushed between those two positions.
+
+Noise
+A Noise is an object representing a sound (as opposed to the object that might be emitting that sound). The desc property of a Noise is displayed in response to EXAMINE or LISTEN TO; any other action is responded to with the notImportantMsg.
+
+Odor
+An Odor is an object representing a smell (as opposed to the object that might be emitting that smell). The desc property of an Odor is displayed in response to EXAMINE or SMELL; any other action is responded to with the notImportantMsg. 
+
+Passage
+A Passage represents a physical object an actor can travel through, like a passage or portal. A Passage is also a TravelConnector so it can be defined on the appropriate direction property of its enclosing room.
+
+PathPassage
+A PathPassage is a Passage that represents a path, so that following it or going down it is equivalent to going through it.
+
+RearContainer
+An RearContainer is a Thing that other things can be put behind.
+
+Room
+A Room is a top location in which the player character, other actors and other objects may be located. It may represent any discrete unit of space, not necessarily a room in a building. Normally actors may only interact with objects in the same room as themselves, but the senseRegion module allows us to define sensory connections between rooms.
+
+SimpleAttachable
+A SimpleAttachabe is a Thing that can be attached to other things or have other things attached to it in the special case in which the attached objects are located in the object to which they are attached. SimpleAttachable is also the base class for other types of attachable.
+
+AttachableComponent
+An AttachableComponent is an item that effectively becomes a component of the object it's attached to, or is treated as a component if it starts out attached.
+
+NearbyAttachable
+A NearbyAttachable is (optionally) placed in the same location as the object to which it is attached, and moves with the object it's attached to (or, alternatively, can prevent the other object being moved while it's attached to it).
+
+Attachable
+An Attachable is a NearbyAttachable that can be attached to more than one thing at a time, like a length of cable connecting two devices.
+
+StairwayDown
+A StairwayDown is Thing the player character can climb down. It might represent an downward staircase, but it could also represent a tree, mast or hillside, for example. A StairwayDown is also a TravelConnector so it can be defined on the appropriate direction property of its enclosing room.
+
+StairwayUp
+A StairwayUp is Thing the player character can climb up. It might represent an upward staircase, but it could also represent a tree, mast or hillside, for example. A StairwayUp is also a TravelConnector so it can be defined on the appropriate direction property of its enclosing room.
+
+SubComponent
+A SubComponent is a Thing that is part of something else and represents the surface, container, underside or rear of the object to which it's attached. This allows a Thing to model several types of containment at once, by having (say) one SubComponent that represents its top (on which things can be placed) and another to represent its interior (in which things can be placed. A SubComponent is normally defined as a nested anonymous object on the remapOn, remapIn, remapUnder or remapBehind property of a Thing. There's no need to further specify whether a SubComponent is also a Surface, Container, Underside or RearContainer, since the library can work this out from the property on which it is defined.
+
+Surface
+A Surface is a Thing that other things can be placed on top of.
+
+Platform
+A Plaftorm is a Surface that the player character (and other actors) can get on.
+
+Switch
+A Switch is a Thing than can be turned on and off.
+
+Flashlight
+A Flashlight is a light source that can be turned on and off; in other words it's a Switch that's lit when on. 
+
+Underside
+An Underside is a Thing that other things can be put under.
+
+Wearable
+A Wearable is a Thing that can be worn.
+
+TravelConnector
+A TravelConnector is an object that can be attached to the directional exit property of a room to facilitate (or optionally block) travel in the associated direction and carry out any side-effects of that travel. A TravelConnector may be used as an abstract object to implement travel, or a subclass of TravelConnector such as Door, Passage, StairwayUp or StairwayDown may be used to represent a physical object via which travel occurs. The Room class also inherits from TravelConnector. Whether the base TravelConnector class or one of its subclasses is used, travel is carried out via a TravelConnector by calling its travelVia() method. 

@@ -1,0 +1,14 @@
+connector
+Our connector is the TravelConnector via which an actor travels on entering this object. This may be a Room, or some other TravelConnector object such as a Door on our outside through which the actor must pass to get inside. We set connector = destination since on occasion it may seem more natural to authors to set the destination property (when it leads straight to a room) and sometimes more natural to set the connector property (when it's a door, say). With connector = (destination) by default, it should work either way.
+
+destination
+If entering this object leads straight to another room, it may seem more natural to define a destination property; provided we don't override connector as well, this has the same effect as pointing connector directly to the room.
+
+isEnterable
+An Enterable is usually enterable
+
+dobjFor(Enter)
+To enter an Enterable the actor must travel via its connector.
+
+iobjFor(PushTravelEnter)
+The handling of an attempt to push something inside this object

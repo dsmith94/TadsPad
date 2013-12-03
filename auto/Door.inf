@@ -1,0 +1,59 @@
+canGoThroughMe
+A Door is something it makes sense to go through.
+
+cannotGoThroughClosedDoorMsg
+The message to display if travel is attempted through this door when it's closed and we're not allowed to open it via an implicit action.
+
+isDestinationKnown
+By default the player character doesn't start off knowing where this door leads. Once the pc has been through the door in either direction this becomes true on both sides of the door.
+
+isFixed
+A door is something fixed in place, not something that can be picked up and carried around.
+
+isListed
+Doors generally aren't listed separately in room descriptions.
+
+isOpen
+Most doors start out closed.
+
+isOpenable
+A door is generally openable
+
+openStatusReportable
+By default we leave game authors to decide if and how they want to report whether a door is open or closed.
+
+otherSide
+A physical door is represented by two objects in code, each representing one side of the door and each present in one of the two locations the door connects. Each side needs to point to the other side
+
+PushTravelVia
+The appropriate action for push an object via a door is PushTravelThrough
+
+traversalMsg
+Create message parameter substitutions for the follower and leader
+
+destination ( )
+The destination is the room to which this door leads.
+
+dobjFor(Enter)
+Entering a door is the same as going through it.
+
+dobjFor(GoThrough)
+Going through a door is the same as traveling via it.
+
+execTravel (actor)
+Carry out travel via this Door
+
+makeLocked (stat)
+Make a Door locked (stat = true) or unlocked (stat = nil)
+
+makeOpen (stat)
+Make a Door open (stat = true) or closed (stat = nil)
+
+preinitThing ( )
+Preinitialize a door
+
+sayActorFollowing (follower, leader)
+Display message announcing that follower is following leader through this door.
+
+sayDeparting (traveler)
+Display message announcing that traveler has left via this door.

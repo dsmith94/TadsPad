@@ -1,0 +1,260 @@
+aft
+no description available
+
+allowCompassDirections
+Are compass directions allowed for travel from this room? By default we'll allow thema anywhere, but game code may wish to override this for rooms that are aboard a vessel.
+
+allowDarkTravel
+Normally we don't allow travel from this location if both it and the destination are in darkness. To allow travel from this location in any case set allowDarkTravel to true.
+
+audibleRooms
+The lists of rooms we can smell, hear, talk or throw from/into from this room.
+
+autoName
+Flag: do we want this room to take its vocab (and hence its name) from its roomTitle property if its vocab property isn't explicitly defined? By default we do.
+
+cannotGoThatWayInDarkMsg
+The message to display when travel is attempted in the dark, either in a direction for which no destination (or other handling) is defined, or in a direction in which the exit is not visible in the dark.
+
+cannotGoThatWayMsg
+The Message to display if travel is disallowed in any given direction (because the corresponding direction property of the Room is nil).
+
+contType
+Anything in the Room is deemed to be inside it (this sounds tautologous, but it's why we give Room a contType of In).
+
+down
+no description available
+
+east
+no description available
+
+extraScopeItems
+A list of extra items to be added to scope when an action is carried out in this room.
+
+floorObj
+Although we don't define room parts in general, we do give every Room a floor so that the parser can refer to objects 'on the ground' when asking disambiguation questions. By default we supply every Room with the defaultGround MultiLoc object to represent its floor. You can if you like replace this with a custom floor object in particular rooms, but it's highly recommended that you define your custom floor to be of the Floor class. It's also legal to define floorObj as nil on a Room that represents an obviously floorless place, such as the top of a mast or tree.
+
+fore
+no description available
+
+in
+no description available
+
+isDestinationKnown
+By default our destination is known if we've been visited
+
+isFixed
+A Room is always fixed in place.
+
+isLit
+A Room is normally lit, but if we want a dark room we can override isLit to nil.
+
+isOpen
+A Room is always open
+
+lastSeenAt
+The location at which a Room was last seen is always itself.
+
+linkedRooms
+The list of rooms to which we're linked by virtue of being in the same SenseRegion.
+
+north
+The direction properties (north, south, etc.) define what happens when travel is attempted in the corresponding direction. A direction property may be defined as another Room (in which case traveling in the corresponding direction takes the actor directly to that Room), or to a TravelConnector (including a Door or Stairway), or to a single-quoted or double-quoted string (which is then simply displayed) or to a method (which is then executed). It is recommended that methods only be used when the effect of attempted travel is something other than ordinary travel; to impose conditions on travel or define the side-effects of travel it's usually better to use a TravelConnector object.
+
+northeast
+no description available
+
+northwest
+no description available
+
+out
+no description available
+
+port
+no description available
+
+regions
+This room can optionally be in one or more regions. The regions property hold the region or a the list of regions I'm in.
+
+remoteContentsLister
+The contents lister to use to list this room's miscellaneous contents when viewed from a remote location.
+
+remoteMiscContentsList
+no description available
+
+remoteSecondSpecialList
+These properties are for the internal use of the remote listing routines, and should normally be left alone by game code.
+
+smellableRooms
+no description available
+
+south
+no description available
+
+southeast
+no description available
+
+southwest
+no description available
+
+starboard
+no description available
+
+talkableRooms
+no description available
+
+throwableRooms
+no description available
+
+up
+no description available
+
+visibleRooms
+The list of rooms that are visible from this room. Ordinarily this list is constructed at Preinit by any Sense Regions this room belongs to, so shouldn't normally be manually adjusted by game code. It's conceivable that game code could tweak these lists after Preinit, though, perhaps to create a one-way connection (e.g. to model a high room that overlooks lower ones)
+
+visited
+Has this room been visited?
+
+west
+no description available
+
+addExtraScopeItems (action)
+Add extra items into scope for the action. By default we simply add the items from our extraScopeItems list together with those of any regions we're it. This allows commonly visible items such as the sky to be added to scope in dark outdoor rooms, for instance.
+
+addToRegions ( )
+Add this room to the room list of all the regions it's in
+
+afterTravel (traveler, connector)
+afterTravel(traveler, connector) is called on a room traveler has just arrived in via connector.
+
+allowShipboardDirections ( )
+Are shipboard directions meaningful in this room? By default we'll make them so if and only if this room defines at least one shipboard directional exit. Game code may wish to modify this, for example, on the hold of a ship that only defines an up direction but where shipboard directions would still in principle be meaningful.
+
+allRegions ( )
+The list of all the regions this room belongs to. This is calculated the first time this property is queried and then stored in the property.
+
+beforeTravel (traveler, connector)
+beforeTravel(traveler, connector) is called on a the room traveler is in just as traveler is about to attempt travel via connector (a TravelConnector object).
+
+canHearInFrom (loc)
+Can we hear into this room from loc (i.e. can an actor in loc hear something in this room?
+
+canHearOutTo (loc)
+Can we hear out from this room to loc (i.e. can an actor in this room hear something in loc)?
+
+cannotGoThatWay (dir)
+The method that is called when travel is attempted in a direction (given the dir parameter) for which nothing is defined. By default we simply display the cannotGoThatWayMsg followed by a list of exits, but this can be  if desired, and different responses given for different directions. Note that the dir parameter will be passed as a direction object. e.g. northDir.
+
+cannotGoThatWayInDark (dir)
+The method that's called when travel is attempted by an undefined or invisible exit in the dark. By default we display the cannotGoThatWayInDarkMsg followed by a list of visible exits, but game code can override this.
+
+canSeeInFrom (loc)
+The following six methods take effect only if there would otherwise be a sensory connection between the current room and loc due to their being in the same SenseRegion. Can we see into this room from loc?
+
+canSeeOutTo (loc)
+Can we see out of this room to loc?
+
+canSmellInFrom (loc)
+Can we smell into this room from loc (i.e. can an actor in loc smell something in this room?
+
+canSmellOutTo (loc)
+Can we hear out from this room to loc (i.e. can an actor in this room hear something in loc)?
+
+destination ( )
+Since a Room provides the TravelConnector interface, we need to define where it leads to when one attempts to travel via it; a Room always leads to itself (i.e. traveling via a Room takes one to that Room).
+
+dobjFor(Examine)
+Examining a Room is the same as looking around within it.
+
+dobjFor(GetOutOf)
+Going out of a Room is the same as executing an OUT command
+
+examineStatus ( )
+By default we don't want the examineStatus method of a Room to do anything except displaying the stateDesc, should we have defined one. In particular we don't want it to list the contents of the Room, since Looking Around will do this anyway.
+
+execTravel (obj)
+When travelling via a room we move the traveler into the room. Then, if the traveler is the player char we perform a look around in the room
+
+getAllRegions ( )
+Calculate a list of all the regions this room belongs to
+
+getDirection (conn)
+The getDirection method returns the direction by which one would need to travel from this room to travel via the connector conn (or nil if none of the room's direction properties point to conn).
+
+getOutermostRoom ( )
+A Room's outermost room is itself.
+
+initVocab ( )
+no description available
+
+inRoomName (pov)
+The name that's used to introduce a list of miscellaneous objects in this room when viewed from a remote location containing the pov object (normally the player character).
+
+interiorParent ( )
+A Room has no interiorParent since it's a top-level container.
+
+iobjFor(PushTravelGetOutOf)
+Pushing an object out of a Room is the same as pushing it via the OUT exit.
+
+isIn (region)
+A Room can't be in another Room or a Thing, but it can notionally be in a Region, so we check to see if we're in the list of our regions.
+
+litWithin ( )
+A Room is lit within it it's illuminated (it's either lit itself or contains a light source
+
+notifyAfter ( )
+Call the after action notifications on this room and its regions
+
+notifyBefore ( )
+Call the before action notifications on this room and its regions
+
+notifyDeparture (traveler, dest)
+Carry out the notifications for a traveler leaving this room to go to dest.
+
+regionsInCommonWith (other)
+return a list of regions that both this room and other are common to.
+
+roomAfterAction ( )
+no description available
+
+roomBeforeAction ( )
+roomBeforeAction and roomAfterAction are called just before and after the action phases of the current action. Individual instances can
+
+roomDaemon ( )
+This method is invoked on the player char's current room at the end of every action. By default we run our doScript() method if we're also a Script (that is, if the Room has been mixed in with an EventList class), thereby facilitating the display of atmospheric messages.
+
+setDestInfo (dirn, dest)
+Convenience method to set information about the destination dirn from this room. The dirn parameter should be specified as a direction object (e.g. northDir) and the dest parameter as a room. Note this is only meaningful for direction properties specified as methods (as opposed to Rooms, Doors or other TravelConnectors or as strings), and is only useful for priming the route finder at the start of the game before the player has tried to go in this direction from this room. Once the player tries this direction the dest info table will be overwritten with information about where it actually leads.
+
+showConnectedMiscContents (pov)
+List the miscellaneous contents of a remote room
+
+showFirstConnectedSpecials (pov)
+Show the specialDescs of any items in the other rooms in our SenseRegions, where specialDescBeforeContents is true
+
+showFirstRemoteSpecials (pov)
+In additional to showing the first (i.e. pre-miscellaneous) list of items with specialDescs in remote locations, the showFirstRemoteSpecials() method builds the other lists of objects for the subsequent methods to use. pov is the point of view object (typically the player character) from whose point of view the list is being constructed.
+
+showRemoteMiscContents (pov)
+List the miscellaneous list of items in this remote location
+
+showSecondConnectedSpecials (pov)
+Show the specialDescs of any items in the other rooms in our SenseRegions, where specialDescBeforeContents is nil
+
+showSecondRemoteSpecials (pov)
+Show the removeSpecialDesc of each item in the second list of specials
+
+showStatuslineExits ( )
+show the exit list in the status line
+
+statusName (actor)
+The name of the room as it appears in the status line.
+
+travelerEntering (traveler, origin)
+This method is invoked when traveler is about to enter this room from origin.
+
+travelerLeaving (traveler, dest)
+This method is invoked when traveler is about to leave this room and go to dest.
+
+unmentionRemoteContents ( )
+Reset the contents of all the remote rooms visible from this room to not having been mentioned. 

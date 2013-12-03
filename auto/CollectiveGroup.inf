@@ -1,0 +1,17 @@
+collectiveActions
+The list of actions this CollectiveGroup will handle; all the rest will be handled by the individual objects.
+
+isListed
+A CollectiveGroup isn't normally listed as an item in its own right.
+
+desc ( )
+The default descriptions of a CollectiveGroup: By default we just list those of our members that are in scope.
+
+filterResolveList (np, cmd, mode)
+If the current action is one of the collective Actions, then filter all myObjects from the resolve list; otherwise filter myself out from the resolve list.
+
+isCollectiveAction (action)
+Is action to be treated as a collective action by this group (i.e. handled by this CollectiveGroup object); by default it is if it's one of the actions listed in our collectiveActions property.
+
+myScopeObjects ( )
+Obtain the list of the objects belonging to me that are in scope.

@@ -1,0 +1,8 @@
+check autocode file
+keywords for the check function
+
+if ()
+Difference branch.
+
+failCheck(msg);
+Prevents action. Macro that uses the ReportFailure function followed by exit.

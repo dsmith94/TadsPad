@@ -1,0 +1,23 @@
+alreadyPulledMsg
+The message to display when we can't be pulled any further
+
+alreadyPushedMsg
+The message to display when we can't be pushed any further
+
+isFixed
+a lever is usually fixed to something
+
+isPulled
+is this lever in the pulled or pushed position.
+
+isPushed
+By default we make isPushed the opposite of isPulled, but we defined them as separate properties in case we want a lever that can be in more than two positions, and so might be in an intermediate position that is neither pushed nor pulled.
+
+dobjFor(Pull)
+Handle Pulling this Lever
+
+dobjFor(Push)
+Handle Pushing this Lever
+
+makePulled (stat)
+Carry out pushing or pulling the lever. Note that this would need to be  on a Lever that can be in more than two states. 

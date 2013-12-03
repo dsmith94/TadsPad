@@ -1,0 +1,140 @@
+allowableAttachments
+A list of the objects or classes of objects that can be attached to me
+
+allowOtherToMoveWhileAttached
+Determine whether the object I'm attached to can be moved while I'm attached to it. For a SimpleAttachable we normally do allow this, since I simply move with the other object.
+
+alreadyAttachedMsg
+no description available
+
+attachedLocation
+The location this object should be moved to when it's attached to another object. A SimpleAttachment should normally be moved into the to which it's attached.
+
+attachedTo
+Am I currently attached to anything?
+
+attachedToList
+The list of things I'm attached to
+
+attachmentLister
+The lister to be used for listing our attachments.
+
+attachments
+A list of the objects that are attached to me
+
+canAttachToMe
+A SimpleAttachable can have (some) other things attached to it
+
+canDetachFromMe
+A SimpleAttachable can have (some) other things detached from it
+
+cannotBeAttachedMsg
+no description available
+
+cannotDetachFromMsg
+Carry out the inherited handling
+
+cannotDetachMsg
+no description available
+
+detachedLocation
+The location this object should be moved to when it's detached. A SimpleAttachment should normally be moved into the location of the object it's just been detached from.
+
+isAttachable
+A SimpleAttachable can be attached to (some) other things.
+
+isDetachable
+Allow detachment through a simple DETACH command. (If this is nil detachment might still be programatically possible, e.g. by UNSCREWing something).
+
+isFirmAttachment
+If I'm attached, do I become firmly attached (so that I can't be removed without an explicit detachment)?
+
+isListed
+By default I'm not listed as a separate object if I'm attached to something else.
+
+notAttachedMsg
+If we don't allow the dobj to be attached to us, rule out the attachment.
+
+notAttachedToThatMsg
+no description available
+
+nothingAttachedMsg
+no description available
+
+okayAttachMsg
+We can't be attached while we're already attached
+
+okayDetachFromMsg
+Carry out the inherited handling.
+
+okayDetachMsg
+We can't be detached if we're not detachable
+
+actionMoveInto (loc)
+Check while any of my attachments object to my being moved while they are attached to me. If so, prevent the attempt to move me as the result of a player command.
+
+allowAttach (obj)
+Can an object be attached to this one? By default we return true if obj is on our list of allowableAttachments.
+
+attachTo (obj)
+Attach this object to obj
+
+detachFrom (obj)
+Detach this item from obj
+
+dobjFor(AttachTo)
+Handling for the ATTACH TO action
+
+dobjFor(Detach)
+no description available
+
+dobjFor(DetachFrom)
+no description available
+
+dobjFor(FastenTo)
+Treat Fasten and Unfasten as equivalent to Attach and Detach
+
+dobjFor(Take)
+We can't take this object while it's attached. Note that this is assymetric: it applies only to the attached object (the one for which attachedTo != nil) not to the object it's attached to (which can be taken with the attached object still attached to it.
+
+dobjFor(Unfasten)
+no description available
+
+dobjFor(UnfastenFrom)
+no description available
+
+examineStatus ( )
+If anything's attached to us, list our attachements when we're examined.
+
+iobjFor(AttachTo)
+no description available
+
+iobjFor(DetachFrom)
+no description available
+
+iobjFor(FastenTo)
+no description available
+
+iobjFor(UnfastenFrom)
+no description available
+
+isAttachedTo (obj)
+Is there an attachment relationship between myself and obj; there is either is obj is attach to me or if I'm attached to obj.
+
+isAttachedToMe (obj)
+Is obj attached to me? By default it is if it's in my list of attachements.
+
+locType ( )
+Our locType is Attached if we're attached so something.
+
+makeAttachedTo (obj)
+For a SimpleAttachable we just make obj the item we're attached to
+
+makeDetachedFrom (obj)
+For a SimpleAttachable detachment reduces our attachedTo to nil
+
+preinitThing ( )
+Preinitialize a SimpleAttachable
+
+sayCannotMoveWhileAttached (other)
+Display a message saying we can't be moved while we're attached to other. 

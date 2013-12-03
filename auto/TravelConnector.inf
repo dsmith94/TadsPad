@@ -1,0 +1,62 @@
+destination
+The room to which this TravelConnector leads when it is traversed
+
+dontChainNotifications
+If this travel connector points to another (e.g. a Room), we probably don't want to trigger the before notifications on the second connector (the Room) as well as this one.
+
+isConnectorApparent
+Is this connector apparent? That is, would it be apparent to an observer under normal lighting conditions, as opposed to being concealed? By default we'll suppose a TravelConnector is apparent unless it's explicitly hidden.
+
+isConnectorListed
+Should this exit be shown in the exit lister? By default we'll assumed it should be it it's visible.
+
+isConnectorVisible
+A TravelConnector (or at least, the exit it represents) is visible if it's apparent (i.e. not concealed in some way) and if the lighting conditions are adequate, or if it's visible in the dark.
+
+isDestinationKnown
+Does the player char know where this travel connector leads? By default s/he doesn't until s/he's visited its destination, but this could be  for an ares the PC is supposed to know well when the game starts, such as their own house.
+
+travelBarriers
+an additional TravelBarrier or a list of TravelBarriers to check on this TravelConnector to see if travel is allowed.
+
+afterTravelNotifications (actor)
+Carry out the after travel notifications for this actor
+
+beforeTravelNotifications (actor)
+Carry out the before travel notifications for this actor.
+
+canTravelerPass (actor)
+Method that should return true is actor is allowed to pass through this TravelConnector and nil otherwise. We allow travel by default but this could be  to block travel under certain conditions.
+
+checkTravelBarriers (traveler)
+Check all the travel barriers associated with this connector to determine whether the traveler is allowed to pass through this travel connector.
+
+execTravel (actor)
+Execute the travel for this actor via this connector
+
+explainTravelBarrier (actor)
+If canTravelerPass returns nil explainTravelBarrier should display a message explaining why travel has been prohibited.
+
+getDepartingDirection (traveler)
+Get the direction traveler needs to go in to traverse this connector from traveler's current location.
+
+getTraveler (actor)
+Get the traveler associated with this actor. Normally the traveler will be the same as the actor, but if the actor is in a vehicle, then the traveler will be the vehicle.
+
+noteTraversal (actor)
+If the actor doing the traveling is the player character, display the travelDesc. Note that although this might normally be a simple description of the travel, the travelDesc method could also be used to carry out any other side-effects of the travel via this connector.
+
+sayActorFollowing (follower, leader)
+Display a message to say that follower is following leader in the direction of this connector.
+
+sayDeparting (traveler)
+Display a message to say that an actor is departing via this connector. On the base class the default behaviour is to describe the departure via a compass direction.
+
+travelDesc ( )
+Carry out any side effects of travel if the traveler is the player character. Typically we might just display some text describing the travel here, but this method could be used for any side-effects of the travel. If the TravelConnector is mixed in with an EventList class then the default behaviour is to call the doScript() method here to drive the EventList.
+
+travelVia (actor, suppressBeforeNotifications?)
+Carrier out travel via this connector. First check that travel through this connector is permitted for this actor (or other traveler). If it is, then send the before travel notifications, display any travelDesc for the player char, if the player char is doing the traveling, note where the player char is travelling. Then execute the actual travel and then finally issue the after travel notifications. The actor is the actor doing the traveling.
+
+traversalMsg ( )
+Create a phrase describing the direction of travel through this connector (e.g. 'to the north') 

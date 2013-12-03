@@ -1,0 +1,23 @@
+decorationActions
+A Noise responds to EXAMINE SOMETHING or LISTEN TO SOMETHING
+
+isDecoration
+Treat a Noise as a decoration so that it responds only to a limited number of actions
+
+isNoise
+no description available
+
+notImportantMsg
+The message to display when any other action is attempted with a Noise
+
+sightSize
+Since we turn LISTEN TO into EXAMINE we want our sightSize to be our soundSize.
+
+tooFarAwayToSeeDetailMsg
+For the same reason we want to use our tooFarAwayToHearlMsg for our tooFarWayToSeeDetailMsg.
+
+dobjFor(Examine)
+no description available
+
+dobjFor(ListenTo)
+Treat Listening to a Noise as equivalent to Examining it.

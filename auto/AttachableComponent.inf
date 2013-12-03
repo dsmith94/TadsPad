@@ -1,0 +1,23 @@
+attachedTo
+The object to which this Component is attached.
+
+cannotTakeMsg
+no description available
+
+initiallyAttached
+Assume that most components start out attached to their containers
+
+isDetachable
+We can't normally detach a Component with a straightforward DETACH command.
+
+isFirmAttachment
+A Component if firmly attached to its parent.
+
+isFixed
+A Component is generally fixed in place (i.e. not separately takeable) if it's attached to something.
+
+locType ( )
+A Component's locType is PartOf while it's attached
+
+preinitThing ( )
+Preinitialize a Component.

@@ -1,0 +1,5 @@
+contType
+The containment type of a container is In; i.e. things located in a Container are considered to be in it.
+
+isOpen
+Containers are open by default

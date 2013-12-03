@@ -1,0 +1,11 @@
+Button object autocomp data
+really not much here, i guess
+
+isFixed
+a button is usually fixed to something
+
+dobjFor(Push)
+Handle the Push command
+
+makePushed ( )
+Carry out the effects of pushing the button here. Particular Button objects will need to override this method to carry out the effect of pushing the button. 

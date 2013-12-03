@@ -1,0 +1,5 @@
+Decoration object
+When there's only one entry, there's only one choice
+
+notImportantMsg
+Used whenever the game needs to inform the player that there's nothing to be gained by interacting with this object - in other words, it's not important to furthering the story, this object is merely decoration. 
