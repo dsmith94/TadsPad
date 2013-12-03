@@ -70,6 +70,10 @@ def show_message(text):
     # display message in message pane
     MainWindow.get_instance().show_message(text)
 
+def show_errors(errors_list):
+
+    # display errors as a listctrl report
+    MainWindow.get_instance().show_errors(errors_list)
 
 def error(message, title):
 

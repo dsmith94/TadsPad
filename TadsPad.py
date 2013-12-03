@@ -194,6 +194,11 @@ class MainWindow(wx.Frame):
         # display text in message pane
         self.message_pane.show_message(text)
 
+    def show_errors(self, text):
+
+        # display errors text in message pane
+        self.message_pane.show_output(text)
+
     def new_project_window(self, insist_mode):
 
         # create a new project. if insist mode is on, keep user from NOT making a project

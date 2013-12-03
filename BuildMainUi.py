@@ -34,7 +34,6 @@ def create_message_pane(top_window):
     top_window.mgr.AddPane(top_window.message_pane, the_pane)
     top_window.mgr.Update()
     top_window.message_pane.show_message("")
-    top_window.message_pane.show_output(None)
 
 
 def create_object_browser(top_window):
