@@ -3,6 +3,7 @@
 
 import wx
 import re
+import os
 
 
 class ErrorListCtrl(wx.ListCtrl):
@@ -26,31 +27,19 @@ class ErrorListCtrl(wx.ListCtrl):
         # process a string containing errors from tads compiler
         self.DeleteAllItems()
 
-        # split into lines to make our job easier
-        pattern = re.compile("(.*)\(([0-9]*)\): error:")
-        error_string = ""
+        # clean up errors string and search
+        errors_list = errors_list.replace("\r\n", "\n")
+        errors_list = errors_list.replace("\r", "\n")
+        errors_list = re.sub("\t.*", "\n", errors_list)
+        error_groups = re.findall("\n(.*)\((\d*)\):\serror: \n(.*)\n\n", errors_list, flags=re.DOTALL)
+
+        # first group is the file, second is the linenumber, third is the error itself
         index = 0
-        error_groups = pattern.split(errors_list)
         for e in error_groups:
-
-            print e
-            print "Check"
-
-            """
-            groups = pattern.findall(line)
-            if groups:
-
-                # we've found an error. add to the catalog
-                self.InsertStringItem(index, "")
-                self.SetStringItem(index, 1, str(groups[0][0]))
-                self.SetStringItem(index, 2, str(groups[0][1]))
-                index += 1
-                error_string = ""
-
-            else:
-                error_string = error_string + line
-                self.SetStringItem(index - 1, 0, error_string)
-            """
+            self.InsertStringItem(index, e[2])
+            self.SetStringItem(index, 1, os.path.basename(e[0]))
+            self.SetStringItem(index, 2, e[1])
+            index += 1
 
     def error_entry_activated(self, event):
 
