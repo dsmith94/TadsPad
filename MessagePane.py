@@ -11,7 +11,7 @@ class MessagePane(wx.Panel):
         wx.Panel.__init__(self, parent=parent)
         r = wx.Display().GetGeometry()
         self.text_control = wx.TextCtrl(self, -1, "", wx.DefaultPosition, (r.Width, r.Height / 5), wx.NO_BORDER | wx.TE_MULTILINE)
-        self.debug_list = ErrorListCtrl.ErrorListCtrl(parent=self)
+        self.debug_list = ErrorListCtrl.ErrorListCtrl(parent=self, notebook=parent.notebook)
         self.debug_list.SetSize((r.Width, r.Height / 5))
 
     def show_message(self, text):

@@ -182,6 +182,19 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
         self.load_page(self.GetTopLevelParent().project.path, name,
                        self.GetTopLevelParent().project.title, self.GetTopLevelParent().object_browser, line_number)
 
+    def highlight_error(self, name, line_number, error_string):
+
+        # scroll through opened pages, find page with the name passed above, highlight line
+        # number and open call tip with error string
+        index = 0
+        for panel in self:
+            if panel.editor.filename == name:
+                panel.editor.CallTipShow(panel.editor.GetLineEndPosition(line_number), error_string)
+                return
+            index += 1
+
+
+
     def on_text_changed(self, event):
 
         # when page is changed, unsaved is new status of document
