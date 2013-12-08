@@ -123,7 +123,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.AutoCompSetDropRestOfWord(True)
         self.AutoCompSetIgnoreCase(1)
         self.auto_code_dictionary = auto_code_repo
-        # self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.auto_code_selected)
+        self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.auto_code_selected)
 
     def on_char_added(self, event):
 
@@ -149,13 +149,50 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # handle autocompletion too
         self.auto_complete()
 
-    # def auto_code_selected(self, event):
+    def auto_code_selected(self, event):
 
-    # we've selected an auto completion expression! under certain conditions,
-    # we may choose to add brackets
-    # selection = event.GetText()
+        # we've selected an auto completion expression! under certain conditions,
+        # we may choose to code templates
+        selection = event.GetText()
+        position = self.GetAnchor()
+        line = self.GetCurrentLine()
 
-        # print event.GetText()
+        # for define indirect action
+        if "DefineIAction" in selection:
+
+            self.InsertText(position, self.insert_indent(1) + "execAction(cmd)" + self.insert_indent(1) +
+                            "{" + self.insert_indent(2) + "\"{You} can't do that now. \";" +
+                            self.insert_indent(1) + "}" + self.insert_indent(0) + ";")
+
+        # for T action
+        if "DefineTAction" in selection:
+            self.InsertText(position, self.insert_indent(0) + ";")
+
+        # for TI action
+        if "DefineTIAction" in selection:
+            self.InsertText(position, self.insert_indent(0) + ";")
+
+        # for new verb rules
+        if "VerbRule" in selection:
+
+            self.InsertText(position, self.insert_indent(1) + "'verb'"
+                            + self.insert_indent(1) + ": VerbProduction"
+                            + self.insert_indent(1) + "action = Verb"
+                            + self.insert_indent(1) + "verbPhrase = 'verb/verbing'"
+                            + self.insert_indent(0) + ";")
+
+
+
+    def insert_indent(self, level):
+
+        # insert a number of indents * level
+
+        indent = self.GetIndent()
+        return_value = "\n"
+        for i in range(level):
+            for k in range(indent):
+                return_value += " "
+        return return_value
 
     def add_brackets(self):
 
