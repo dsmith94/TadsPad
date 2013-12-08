@@ -35,9 +35,6 @@ class ObjectBrowser(wx.ListCtrl):
         ## new instance of object browser
         wx.ListCtrl.__init__(self, parent=parent, style=wx.LC_REPORT)
 
-        # the objects!
-        self.objects = []
-
         # when object is activated use the ObjectActivated event
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.object_activated)
 
@@ -64,7 +61,7 @@ class ObjectBrowser(wx.ListCtrl):
 
         # rebuild objects catalog from the source files listed in our makefile
 
-        self.objects = []
+        self.notebook.objects = []
         self.DeleteAllItems()
 
         # loop through all files in project, and get objects in each
@@ -85,7 +82,7 @@ class ObjectBrowser(wx.ListCtrl):
                 for o in list_of_objects:
 
                     # add object to our master object list
-                    self.objects.append(o)
+                    self.notebook.objects.append(o)
 
                     # and update the columns in the catalog
                     self.InsertStringItem(index, o.definition)

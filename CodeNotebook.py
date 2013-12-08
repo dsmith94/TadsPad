@@ -30,6 +30,9 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
         self.Bind(wx.lib.agw.aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
         self.get_auto_code_data()
 
+        # the objects!
+        self.objects = list()
+
     def __getitem__(self, index):
         if index < self.GetPageCount():
             return self.GetPage(index)
@@ -128,7 +131,7 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
                     self.SetPageText(index, page.editor.filename)
             index += 1
 
-    def new_page(self, name, the_project, object_browser):
+    def new_page(self, name, the_project):
 
         # create a new page and add it to our notebook
 
@@ -136,16 +139,16 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
             from shutil import copyfile
             copyfile("./blank.tmp", the_project.path + "/" + name + ".t")
             the_project.files.append(name + ".t")
-            self.load_page(the_project.path, name + ".t", the_project.title, object_browser)
+            self.load_page(the_project.path, name + ".t", the_project.title)
         except IOError, e:
             MessageSystem.error("Unable to write new file: " + name + ".t", "No new file added - " + e.filename)
 
-    def load_page(self, path, filename, title, object_browser, line_number=0):
+    def load_page(self, path, filename, title, line_number=0):
 
         # load page with filename passed above
         tp = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        tp.editor = Editor.EditorCtrl(self.auto_code_tooltips, tp, self.auto_code_dictionary)
+        tp.editor = Editor.EditorCtrl(self.auto_code_tooltips, tp, self.auto_code_dictionary, self)
         tp.SetSizerAndFit(sizer)
         sizer.Add(tp.editor, 1, wx.EXPAND | wx.ALL)
         tp.editor.filename = filename
@@ -160,7 +163,6 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
         self.AddPage(tp, tp.editor.filename)
         self.SetSelection(self.GetPageCount() - 1)
         tp.SetFocus()
-        object_browser.rebuild_object_catalog()
         tp.editor.GotoLine(line_number)
         tp.editor.ScrollToLine(line_number - 1)
 
@@ -179,7 +181,7 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
 
         # try loading it from memory if we can't find it already open
         self.load_page(self.GetTopLevelParent().project.path, name,
-                       self.GetTopLevelParent().project.title, self.GetTopLevelParent().object_browser, line_number)
+                       self.GetTopLevelParent().project.title, line_number)
 
     def highlight_error(self, name, line_number, error_string):
 

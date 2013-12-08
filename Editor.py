@@ -82,7 +82,7 @@ class ColorSchemer:
 
 class EditorCtrl(wx.stc.StyledTextCtrl):
 
-    def __init__(self, help_dictionary, parent, auto_code_repo, style=wx.SIMPLE_BORDER):
+    def __init__(self, help_dictionary, parent, auto_code_repo, notebook, style=wx.SIMPLE_BORDER):
 
         ## Constructor
         wx.stc.StyledTextCtrl.__init__(self, parent=parent, style=style)
@@ -125,6 +125,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.auto_code_dictionary = auto_code_repo
         self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.auto_code_selected)
 
+        # reference to notebook
+        self.notebook = notebook
+
     def on_char_added(self, event):
 
         # don't add if we're in string or comment
@@ -155,7 +158,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # we may choose to code templates
         selection = event.GetText()
         position = self.GetAnchor()
-        line = self.GetCurrentLine()
 
         # for define indirect action
         if "DefineIAction" in selection:
@@ -179,9 +181,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                             + self.insert_indent(1) + ": VerbProduction"
                             + self.insert_indent(1) + "action = Verb"
                             + self.insert_indent(1) + "verbPhrase = 'verb/verbing'"
+                            + self.insert_indent(1) + "missingQ = 'what do you want to verb'"
                             + self.insert_indent(0) + ";")
-
-
 
     def insert_indent(self, level):
 
@@ -278,14 +279,19 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         else:
             if in_verify:
                 library_files.append("Verify")
-            classes = find_object(lines)
+            classes = find_object(lines, self.notebook.objects)
             if classes:
                 for c in classes:
                     library_files.append(c)
             else:
                 # we're not editing an object, so provide the verb creation options if no indent is set
                 if self.GetLineIndentation(self.GetCurrentLine()) == 0:
-                    return "DefineIAction(Verb)^" + "DefineTAction(Verb)^" + "DefineTIAction(Verb)^" + "VerbRule(Verb)", ""
+                    return "DefineIAction(Verb)^" + "DefineTAction(Verb)^" + "DefineTIAction(Verb)^" \
+                           + "VerbRule(Verb)", ""
+        # apply object listing first
+        for o in self.notebook.objects:
+            suggestions += o.definition + "^"
+        # then apply standard library defs
         for entry in library_files:
             if entry in self.auto_code_dictionary:
                 suggestions += self.auto_code_dictionary[entry] + "^"
@@ -456,9 +462,36 @@ def clean_string(code):
     return removed_strings
 
 
-def find_object(lines):
+def find_object_reference(line, object_list):
+
+    # find obj reference on the line we're editing
+    tokens = re.split('[{0}]'.format(re.escape(" [](){};")), line)
+    the_object = tokens[-1].split(".")[0]
+    if the_object:
+        for o in object_list:
+            if o.definition == the_object:
+                return o
+    return None
+
+
+def find_object(lines, object_list):
 
     # return the present classes of the object we're editing, else return none
+
+    # first - if we're on top of an object reference (ex: object.property) return those classes instead of the
+    # master reference here
+    top_line = lines[-2]
+    if "." in top_line:
+        object_reference = find_object_reference(top_line, object_list)
+        if object_reference:
+            return_value = []
+            for c in object_reference.classes:
+                return_value.append(c)
+            if len(return_value) > 0:
+                return return_value
+            else:
+                return None
+
     for line in lines:
 
         obj = pattern_object.search(line)
