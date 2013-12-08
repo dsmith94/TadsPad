@@ -5,8 +5,22 @@ import wx
 import wx.stc
 import sys
 import re
-import ObjectBrowser
 import MessageSystem
+
+
+# english defaults for verify, check
+verify_token = "verify"
+check_token = "check"
+action_token = "action"
+
+# pre-compile and cache regular expression patterns for use later
+pattern_line_comments = re.compile("//.*")
+pattern_block_comments = re.compile("/\*.*?\*/", flags=re.S)
+pattern_double_quotes = re.compile("\".+?\"", flags=re.S)
+pattern_single_quotes = re.compile("\'.*?\'", flags=re.S)
+pattern_enclosure = re.compile("\n\s*\{")
+pattern_object = re.compile("\+*\s*([a-zA-Z]*):")
+pattern_classes = re.compile(": ([\w*|,|\s])*")
 
 
 class ColorSchemer:
@@ -95,7 +109,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         ## set color scheme object
         self.color_scheme = ColorSchemer()
         self.color_scheme.update_colors(self)
-        self.anchor_at_style = 0
 
         # indents
         self.SetIndent(4)
@@ -109,34 +122,150 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.AutoCompSetSeparator(94)
         self.AutoCompSetDropRestOfWord(True)
         self.AutoCompSetIgnoreCase(1)
-        self.auto_code_list = auto_code_repo
-        self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.auto_code_selected)
+        self.auto_code_dictionary = auto_code_repo
+        # self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.auto_code_selected)
 
     def on_char_added(self, event):
 
+        # don't add if we're in string or comment
+        anchor_at_style = self.GetStyleAt(self.GetAnchor())
+        if check_for_plain_style(anchor_at_style) is False:
+            return
+
         # when char is added, handle autoindent
         if event.GetKey() == 10:
-            line = self.GetCurrentLine()
-            self.SetLineIndentation(line, self.GetLineIndentation(line - 1))
-            self.SetCurrentPos(self.GetLineIndentPosition(line))
-            self.SetAnchor(self.GetLineIndentPosition(line))
+            self.auto_indent()
+
+        # when bracket is added, autoadd matching close bracket
+        if event.GetKey() == 123:
+            self.add_brackets()
+
+        # when quotes added, autoadd quotes
+        if event.GetKey() == 34:
+            self.add_double_quotes()
+        if event.GetKey() == 39:
+            self.add_single_quotes()
 
         # handle autocompletion too
-        self.prepare_auto_complete()
+        self.auto_complete()
 
-    def auto_code_selected(self, event):
+    # def auto_code_selected(self, event):
 
-        # we've selected an auto completion expression! under certain conditions,
-        # we may choose to add brackets
+    # we've selected an auto completion expression! under certain conditions,
+    # we may choose to add brackets
+    # selection = event.GetText()
 
-        selection = event.GetText()
-        if keyword_needs_brackets(selection):
-            position = self.GetAnchor()
-            line = self.GetCurrentLine()
-            self.InsertText(position, "\n{\n\n}")
-            self.SetLineIndentation(line + 1, self.GetLineIndentation(line))
-            self.SetLineIndentation(line + 2, self.GetLineIndentation(line) + self.GetIndent())
-            self.SetLineIndentation(line + 3, self.GetLineIndentation(line))
+        # print event.GetText()
+
+    def add_brackets(self):
+
+        # add brackets to edited code
+        position = self.GetAnchor()
+        line = self.GetCurrentLine()
+        self.InsertText(position, "\n\n}")
+        self.SetLineIndentation(line, self.GetLineIndentation(line))
+        self.SetLineIndentation(line + 1, self.GetLineIndentation(line) + self.GetIndent())
+        self.SetLineIndentation(line + 2, self.GetLineIndentation(line))
+
+    def add_double_quotes(self):
+
+        # add quotes to edited code
+        position = self.GetAnchor()
+        self.InsertText(position, "\"")
+
+    def add_single_quotes(self):
+
+        # add single quotes to edited code
+        position = self.GetAnchor()
+        self.InsertText(position, "'")
+
+    def auto_indent(self):
+
+        line = self.GetCurrentLine()
+        self.SetLineIndentation(line, self.GetLineIndentation(line - 1))
+        self.SetCurrentPos(self.GetLineIndentPosition(line))
+        self.SetAnchor(self.GetLineIndentPosition(line))
+
+        # if indentation is zero, auto add ; for bracing
+        if self.GetLineIndentation(line) == 0:
+            if len(self.GetLine(line - 1).strip()) > 0:
+                self.InsertText(self.GetAnchor(), "\n;")
+                self.SetLineIndentation(line, 0)
+                self.SetLineIndentation(line + 1, self.GetIndent())
+                self.SetLineIndentation(line + 2, 0)
+
+    def auto_complete(self):
+
+        # engine to analyze code suggest keywords
+        # conducted in a series of stages
+
+        # stage 1: clean the code to be used, so the parser doesn't get fouled by unneeded keywords
+        code = self.Text[0:self.GetAnchor() - 1]
+        code = clean_string(code)
+
+        # stage 2: take the processed code (now a list, divided into lines and backwards) and find
+        # the classes of the object we're editing, plus the present enclosures
+        pre_filtered_suggestions = self.build_suggestions(code)
+
+        # stage 3: finally, gather context data from entered word
+        # make string to send to the stc autocompletion box
+        # note - separator betwixt keywords in final string is a ^
+        present_word = self.get_word()
+        if len(present_word) < 1:
+            return
+        suggestions = filter_suggestions(present_word, pre_filtered_suggestions[0], pre_filtered_suggestions[1])
+        if len(suggestions) > 0:
+            self.AutoCompShow(len(present_word), suggestions)
+
+    def build_suggestions(self, code):
+
+        # build suggestions from the code passed above
+        suggestions = ""
+        filter_out = ""
+        lines = code.split("\n")
+        enclosures = in_enclosure(lines, action_token, verify_token, check_token, "objFor")
+        in_verify = verify_token in enclosures
+        in_check = check_token in enclosures
+        in_action = action_token in enclosures
+        in_dobj = "objFor" in enclosures
+
+        # with some context info collected, build a list of library files form the "auto" directory to pull info from
+        library_files = []
+        check_on_line = self.get_line_suggestions(lines[-2])
+        if check_on_line is not None:
+            return check_on_line, ""
+        if in_dobj:
+            filter_out += "objFor"
+        if in_dobj and not in_verify and not in_check and not in_action:
+            library_files.append("ObjFor")
+        else:
+            if in_verify:
+                library_files.append("Verify")
+            classes = find_object(lines)
+            if classes:
+                for c in classes:
+                    library_files.append(c)
+            else:
+                # we're not editing an object, so provide the verb creation options if no indent is set
+                if self.GetLineIndentation(self.GetCurrentLine()) == 0:
+                    return "DefineIAction(Verb)^" + "DefineTAction(Verb)^" + "DefineTIAction(Verb)^" + "VerbRule(Verb)", ""
+        for entry in library_files:
+            if entry in self.auto_code_dictionary:
+                suggestions += self.auto_code_dictionary[entry] + "^"
+        return suggestions, filter_out
+
+    def get_line_suggestions(self, line):
+
+        # recommend remap options for dobj and iobj
+        if "dobj" in line:
+            return self.auto_code_dictionary["AsDobjFor"]
+        if "iobjFor" in line:
+            return self.auto_code_dictionary["AsIobjFor"]
+        if ":" in line:
+            if self.GetLineIndentation(self.GetCurrentLine()) == 0:
+                # we're probably editing an object, provide object inheritance suggestions
+                return self.auto_code_dictionary["Classes"]
+        return None
 
     def get_word(self):
 
@@ -145,10 +274,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if anchor_position >= len(self.Text):
             return ""
         for char_index in xrange(anchor_position, 1, -1):
-            if self.Text[char_index] == '\n':
-                return ""
-            if self.Text[char_index].isspace() or self.Text[char_index] == ".":
-                return self.Text[char_index:anchor_position].strip(".").strip()
+            char = self.Text[char_index]
+            if word_boundary(char):
+                return self.Text[char_index + 1:anchor_position + 1].strip(".").strip()
         return ""
 
     def call_context_help(self, event):
@@ -172,7 +300,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             else:
                 MessageSystem.show_message("")
 
-
     def get_full_word(self):
 
         # returns full word at caret position
@@ -180,9 +307,10 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if anchor_position >= len(self.Text):
             return ""
         for end_of_word in xrange(anchor_position, len(self.Text)):
-            if self.Text[end_of_word].isspace() or self.Text[end_of_word] == '\n':
+            if word_boundary(self.Text[end_of_word]):
                 for start_of_word in xrange(anchor_position, 1, -1):
-                    if self.Text[start_of_word] == '\n' or self.Text[start_of_word].isspace():
+                    get_char = self.Text[start_of_word - 1]
+                    if word_boundary(get_char):
                         return self.Text[start_of_word:end_of_word].strip()
         return ""
 
@@ -201,61 +329,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             MessageSystem.error("Could not save file: " + e.filename, "File save failure")
             return False
 
-    def show_code_completion_box(self, keywords, show_objects=True):
-
-        # prepare the box by getting all the properties from a list of keywords
-
-        # if we have no classes passed, terminate now
-        if keywords == ';':
-            return
-
-        # first get complete list of game objects
-        object_list = wx.GetTopLevelParent(self).object_browser.objects
-
-        # if an object referenece is passed, get those object properties
-        for o in object_list:
-            if keywords[0] == o.definition:
-                keywords = o.classes
-                show_objects = False
-                break
-
-        # pull the present word that the caret is editing right now
-        # if there's no word there, terminate
-        present_word = self.get_word()
-        if len(present_word) < 1:
-            return
-
-        # now scan the keywords passed above and prepare string to pass to the auto completion system
-        string_of_keywords = ""
-        for the_class in keywords:
-            if the_class in self.auto_code_list:
-                for the_property in self.auto_code_list[the_class].split('^'):
-                    if the_property.find(present_word) > -1:
-                        string_of_keywords += the_property + "^"
-
-        # while we're at it, prepare a list of the objects we can enter as well
-        # this gives autocompletion to tads game objects
-        if show_objects is True:
-            for o in object_list:
-                if o.definition.find(present_word) > -1:
-                    string_of_keywords += o.definition.strip() + "^"
-
-        if string_of_keywords != "":
-            self.AutoCompShow(len(present_word) + 1, string_of_keywords)
-
-    def prepare_auto_complete(self):
-
-        # only do autocomplete if style system (in the editor) says we're not in a string or comment
-        # and check for recently edited object near caret
-        if check_for_plain_style(self.anchor_at_style) is False:
-            self.anchor_at_style = self.GetStyleAt(self.GetAnchor())
-            return
-        self.anchor_at_style = self.GetStyleAt(self.GetAnchor())
-        if check_for_plain_style(self.anchor_at_style) is True:
-            code_to_check = self.Text[0:self.GetAnchor() + 1]
-            current_classes = analyze_code_context(code_to_check)
-            self.show_code_completion_box(current_classes)
-
 
 def check_for_plain_style(style):
 
@@ -268,138 +341,118 @@ def check_for_plain_style(style):
     return True
 
 
-def analyze_code_context(code):
+def word_boundary(char):
 
-    # search the code backwards (from end to start) to find
-    # which object (or otherwise) we're editing
+    # check that the char passed is/isnot a word boundary
+    # return true if word boundary
+    # false otherwise
 
-    # return ; for no object, return classes for this object otherwise
-
-    # split all lines for easier searching
-    lines = remove_unused_strings(code)
-
-    # on top of a comment, don't do anything
-    first_line = lines[-1]
-    if first_line.find("/*") > -1 or first_line.find("*/") > -1 or first_line.find("//") > -1:
-        return ';'
-
-    # do a couple of tests, only for the first line
-    # and if we find an equal sign, bring out the default boolean values
-    if first_line.find("=") > -1:
-        return ["Boolean"]
-
-    # no indent? then we probably have an object declaration
-    if first_line.find(": ") > -1:
-        if first_line[0].isspace() is False:
-            return ["Classes"]
-
-    # reference to object? then return that object
-    if len(first_line) > 1:
-        obj_reference = editing_object_reference(first_line)
-        if obj_reference is not None:
-            return [obj_reference]
-
-    # otherwise, search code to find appropriate context
-    for line in reversed(lines):
-
-        if len(line) > 1:
-
-            # if we find a ; at beginning of line, we're not in a object
-            if line[0] == ';':
-                return ';'
-
-            # if we find one of the dobjFor or iobjFor's, show the objectfor macros
-            if re.search("[d|i]objFor", line) > -1:
-                return_value = ["ObjFor"]
-                return return_value
-
-            # if we find a "verify" command, return the verify macros
-            if re.search("verify\s*\(\s*\)", line) > -1:
-                return_value = ["Verify"]
-                return return_value
-
-            # if we find a "check" command, return the verify macros
-            if re.search("check\s*\(\s*\)", line) > -1:
-                return_value = ["Check"]
-                return return_value
-
-            # if we find an object definition, isolate its classes
-            object_definition = re.search(ObjectBrowser.classes_look_like, line)
-            if object_definition:
-                return_value = []
-                list_of_classes = object_definition.group(0).split(',')
-
-                # now prepare a list of classes to return
-                for value in list_of_classes:
-                    return_value.append(value.strip(":").strip(' ').strip('\n').strip('\r').strip('\t'))
-
-                return return_value
-
-    # cover ourselves in case we don't find anything
-    return ";"
-
-
-def editing_object_reference(string):
-
-    # return object if we're editing a reference to an object
-    # no spaces, colons, semicolons, etc... allowed - return false then
-
-    tokens = re.findall("[\w]+\.", string)
-    if tokens:
-        if tokens[-1].find('.') > -1:
-            return tokens[-1][:tokens[-1].find('.')]
-    return None
-
-
-def keyword_needs_brackets(keyword):
-
-    # return true if we're passed a keyword that gets brackets
-    if keyword.find("dobjFor") > -1:
+    if char.isspace():
         return True
-    if keyword.find("iobjFor") > -1:
-        return True
-    if keyword.find("verify()") > -1:
-        return True
-    if keyword.find("check()") > -1:
-        return True
-    if keyword.find("action()") > -1:
+    separators = '.', '[', ']', '{', '}', '(', ')'
+    if char in separators:
         return True
     return False
 
 
-def remove_unused_strings(code):
+def remove_bracketed_enclosures(code):
+
+    # remove bracketed enclosures from passed string
+    # also: trim string to the ; on first indentation position, we don't need the rest
+    return_value = ""
+    brackets = 0
+    lines = code.split("\n")
+    for line in reversed(lines):
+        if '}' in line:
+            brackets += 1
+        if brackets == 0:
+            return_value = line + "\n" + return_value
+        if '{' in line:
+            if brackets > 0:
+                brackets -= 1
+        if len(line) > 0:
+            if line[0] == ';':
+                return return_value
+
+    return return_value
+
+
+def filter_suggestions(word, separated_string, filter_out):
+
+    # filter a string of suggestions separated by ^
+    # remove words with in the filter out string
+    tokens = separated_string.split("^")
+    return_value = ""
+    if filter_out is not "":
+        for token in tokens:
+            if filter_out not in token:
+                if word in token:
+                    return_value += token + "^"
+    else:
+        for token in tokens:
+            if word in token:
+                return_value += token + "^"
+    return_value.strip("^")
+    return return_value
+
+
+def clean_string(code):
 
     # return a string of code with strings, quotes, and bracketed code removed
 
-    # remove comments
-    removed_strings = code
-    removed_strings = re.sub("//.*", "", removed_strings)
-    removed_strings = re.sub("/\*.*?\*/", "", removed_strings, flags=re.S)
+    # describe all patterns to remove
+    remove_patterns = pattern_line_comments, pattern_block_comments, pattern_double_quotes, pattern_single_quotes
 
-    # remove strings from code
+    # remove all matching patterns to produced a cleaned string, easy to search
+    removed_strings = code
     removed_strings = removed_strings.replace("\\\"", "")
     removed_strings = removed_strings.replace("\\'", "")
-    removed_strings = re.sub("\".+?\"", "", removed_strings, flags=re.S)
-    removed_strings = re.sub("\'.*?\'", "", removed_strings, flags=re.S)
+    removed_strings = removed_strings.replace("\r", "\n")
+    for pattern in remove_patterns:
+        removed_strings = pattern.sub("", removed_strings)
 
-    # split all lines for editing
-    lines = removed_strings.strip().replace("\r", "").replace("\n{", "{").split("\n")
-    return_value = []
-    in_brackets = 0
-    dont_add = 0
-    for i in range(len(lines) - 1, 0, -1):
-        if dont_add > 0:
-            dont_add -= 1
-        if lines[i].find("}") > -1:
-            in_brackets += 1
-        if lines[i].find("{") > -1:
-            if in_brackets > 0:
-                in_brackets -= 1
-                dont_add = 3
-        if in_brackets == 0 and dont_add == 0:
-            return_value.insert(0, lines[i].strip("\r"))
+    # remove bracketed enclosures
+    # when on the return, the lines are reversed, for easier for loop searching
+    removed_strings = pattern_enclosure.sub("{", removed_strings)
+    removed_strings = remove_bracketed_enclosures(removed_strings)
 
-    return filter(None, return_value)
+    return removed_strings
 
+
+def find_object(lines):
+
+    # return the present classes of the object we're editing, else return none
+    for line in lines:
+
+        obj = pattern_object.search(line)
+        if obj:
+            classes = pattern_classes.search(line)
+            if classes:
+                string_of_classes = classes.group()
+                string_of_classes = string_of_classes.strip(":")
+                list_of_classes = string_of_classes.split(",")
+                if list_of_classes is not None:
+                    return_value = []
+                    for c in list_of_classes:
+                        return_value.append(c.strip())
+                    return return_value
+
+    return None
+
+
+def in_enclosure(lines, *args):
+
+    # check if we're in enclosures marked by each token in "args"
+    # verify return value with syntax: if "token" in "return_value": then do this
+    check_against = []
+    return_value = ""
+    for arg in args:
+        check_against.append(re.compile(arg + "\s*\("))
+    for line in lines:
+        for c in check_against:
+            check = c.search(line)
+            if check:
+                return_value = return_value + c.pattern + " "
+    return return_value
 
 __author__ = 'dj'

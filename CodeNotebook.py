@@ -24,8 +24,7 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
             wx.lib.agw.aui.AUI_NB_DEFAULT_STYLE | wx.lib.agw.aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
         self.SetWindowStyleFlag(self.default_style)
         self.project_name = "unnamed project"
-        self.auto_code_doc_map = []
-        self.auto_code_list = {}
+        self.auto_code_dictionary = {}
         self.auto_code_tooltips = {}
         self.Bind(wx.lib.agw.aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
         self.Bind(wx.lib.agw.aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
@@ -146,7 +145,7 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
         # load page with filename passed above
         tp = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        tp.editor = Editor.EditorCtrl(self.auto_code_tooltips, tp, self.auto_code_list)
+        tp.editor = Editor.EditorCtrl(self.auto_code_tooltips, tp, self.auto_code_dictionary)
         tp.SetSizerAndFit(sizer)
         sizer.Add(tp.editor, 1, wx.EXPAND | wx.ALL)
         tp.editor.filename = filename
@@ -193,8 +192,6 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
                 return
             index += 1
 
-
-
     def on_text_changed(self, event):
 
         # when page is changed, unsaved is new status of document
@@ -230,10 +227,10 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
             for definition in code_definitions_list:
                 processed_definition = definition.split('\n', 1)
                 get_new_list_for_class = ""
-                if name_of_class in self.auto_code_list:
-                    get_new_list_for_class = str(self.auto_code_list[name_of_class]) + processed_definition[0] + "^"
-                self.auto_code_list.update({name_of_class: get_new_list_for_class})
-                self.auto_code_list[name_of_class].strip(" ")
+                if name_of_class in self.auto_code_dictionary:
+                    get_new_list_for_class = str(self.auto_code_dictionary[name_of_class]) + processed_definition[0] + "^"
+                self.auto_code_dictionary.update({name_of_class: get_new_list_for_class})
+                self.auto_code_dictionary[name_of_class].strip(" ")
                 if processed_definition[0] not in self.auto_code_tooltips:
                     self.auto_code_tooltips.update({processed_definition[0]: processed_definition[1]})
                 if processed_definition[1] != "no description available":
@@ -248,8 +245,8 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
             name_of_superclass = superclass_file[7:-4]
             subclass_list = superclass_data.read().replace("\r", "").split("\n")
             for subclass in subclass_list:
-                if subclass in self.auto_code_list:
-                    self.auto_code_list[subclass] += self.auto_code_list[name_of_superclass]
+                if subclass in self.auto_code_dictionary:
+                    self.auto_code_dictionary[subclass] += self.auto_code_dictionary[name_of_superclass]
             superclass_data.close()
 
 

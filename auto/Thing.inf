@@ -659,7 +659,7 @@ get everything that's directly in me
 directlyWorn
 get everything I'm directly wearing
 
-distinguishByContentsOVERRIDDEN
+distinguishByContents
 Can I be distinguished in parser messages by my contents? If so, we can be distinguished (in parser messages) from similar objects by our contents, or lack thereof: "bucket of water" vs "empty bucket". If this is true, our nominalContents property determines the contents we display for this.
 
 dontNeedCleaningObjMsg
@@ -1211,16 +1211,16 @@ no description available
 tooDarkToSeeMsg
 The message to display when it's too dark to see anything
 
-tooFarAwayToHearMsg	senseRegion.t[820]
+tooFarAwayToHearMsg
 Otherwise say this object is too far away for the actor to hear.
 
-tooFarAwayToReadMsg	senseRegion.t[839]
+tooFarAwayToReadMsg
 no description available
 
-tooFarAwayToSeeDetailMsg	senseRegion.t[765]
+tooFarAwayToSeeDetailMsg
 Otherwise say this object is too far away for the actor to see any detail.
 
-tooFarAwayToSmellMsg	senseRegion.t[894]
+tooFarAwayToSmellMsg
 Otherwise say this object is too far away for the actor to smell.
 
 turnNoEffectMsg
@@ -1451,10 +1451,7 @@ dobjFor(EnterOn)
 The base handling is simply to rule out EnterOn at verify. There's no further handling the library can provide for a 'general' case so it's up to game code to define it for specific cases.
 
 dobjFor(Examine)
-Now the handling for specific actions
-
-Modified in senseRegion.t[720]:
-Modify the effect of Examine to show the remoteDesc if appropriate, or else our regular desc if our sightSize is large, or else a message to say we're too far away to see any detail. If we're in the same room as the actor, simply carry out the regular (inherited) method.
+Now the handling for specific actions. Modify the effect of Examine to show the remoteDesc if appropriate, or else our regular desc if our sightSize is large, or else a message to say we're too far away to see any detail. If we're in the same room as the actor, simply carry out the regular (inherited) method.
 
 dobjFor(Extinguish)
 no description available
@@ -1924,13 +1921,13 @@ are we on the exterior of the given object, directly or indirectly?
 isReadableFrom (pov)
 Assuming this item is readable at all, is it readable from the remote location containing pov? By default we assume this is the case if and only if the item's sightSize is large, but this can be overridden, for example for a large item with small lettering.
 
-isSmellableFrom (pov)	senseRegion.t[631]
+isSmellableFrom (pov)
 Is this item smellable from the remote location containing pov? By default it is if it's smellSize is not small, but this can be overridden, for example to vary with the pov.
 
 isThereALightSourceIn (lst)
 Determine (recursively) whether lst contains a light source; i.e. whether any of the items within list is lit or whether any of the visible contents of any of the items in lst it lit.
 
-isVisibleFrom (pov)	senseRegion.t[616]
+isVisibleFrom (pov)
 Is this item visible from the remote location containing pov? By default it is if it's sightSize is not small, but this can be overridden, for example to vary with the pov.
 
 isWornBy (obj)
@@ -1945,7 +1942,7 @@ The subset of the contents of cont that should be listed.
 listContents (lister, =, roomContentsLister)
 List the contents of this object using lister.
 
-listRemoteContents (lst, lister, pov)	senseRegion.t[461]
+listRemoteContents (lst, lister, pov)
 List contents as seen from a remote location
 
 listSubcontentsOf (contList, lister, =, examineLister)
@@ -2026,13 +2023,13 @@ Carry out the preinitialization of a Thing
 pushTravelRevealItems ( )
 Reveal items previously under or behind us that now become visible.
 
-remoteInitSpecialDesc (pov)	senseRegion.t[609]
+remoteInitSpecialDesc (pov)
 Our remoteInitSpecialDesc, used when viewing this item from a remote location.By default we just show our ordinary initSpecialDesc, but in practice we'll normally want to override this.
 
-remoteObjInName (pov)	senseRegion.t[711]
+remoteObjInName (pov)
 The name given to this object when it's the container for another object viewed remotely, e.g. 'in the distant bucket' as opposed to just 'in the bucket'. By default we just use the objInName.
 
-remoteSpecialDesc (pov)	senseRegion.t[602]
+remoteSpecialDesc (pov)
 Our remoteSpecialDesc is the paragraph describing this item in a room description when viewed from a remote location containing the pov object. By default we just show our ordinary specialDesc, but in practice we'll normally want to override this.
 
 removeFromContents (obj, vec?)
