@@ -72,11 +72,8 @@ def create_menu_system(top_window):
 
     # file menu
     file_menu = wx.Menu()
-    add_menu = wx.Menu()
     project_menu = wx.Menu()
-    add_empty_item = add_menu.Append(wx.ID_ANY, 'Empty File', 'Add Empty File to Project...')
-    add_existing_item = add_menu.Append(wx.ID_ANY, 'Existing File', 'Add Existing File to Project...')
-    file_menu.AppendMenu(wx.ID_ANY, "&Add to Project", add_menu)
+    add_empty_item = file_menu.Append(wx.ID_ANY, 'New File', 'Add New File to Project...')
     save_item = file_menu.Append(wx.ID_ANY, 'Save', 'Save This File')
     save_as_item = file_menu.Append(wx.ID_ANY, 'Save As...', 'Save This File to Different Name')
     save_all_item = file_menu.Append(wx.ID_ANY, 'Save All\tCtrl+S', 'Save All Modified Files')

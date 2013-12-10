@@ -2,6 +2,7 @@
 import wx
 import re
 import MessageSystem
+import operator
 
 
 # object browser subsystem
@@ -27,13 +28,16 @@ class ObjectInMemory():
         self.definition = None
         self.line_number = None
 
+    def __repr__(self):
+        return repr((self.definition, self.filename, self.line_number, self.classes))
+
 
 class ObjectBrowser(wx.ListCtrl):
 
     def __init__(self, notebook, parent):
 
         ## new instance of object browser
-        wx.ListCtrl.__init__(self, parent=parent, style=wx.LC_REPORT)
+        wx.ListCtrl.__init__(self, parent=parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
 
         # when object is activated use the ObjectActivated event
         self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.object_activated)
@@ -65,7 +69,6 @@ class ObjectBrowser(wx.ListCtrl):
         self.DeleteAllItems()
 
         # loop through all files in project, and get objects in each
-        index = 0
         files = wx.GetTopLevelParent(self).project.files
         path = wx.GetTopLevelParent(self).project.path
         for file_name in files:
@@ -84,11 +87,15 @@ class ObjectBrowser(wx.ListCtrl):
                     # add object to our master object list
                     self.notebook.objects.append(o)
 
-                    # and update the columns in the catalog
-                    self.InsertStringItem(index, o.definition)
-                    self.SetStringItem(index, 1, str(o.filename))
-                    self.SetStringItem(index, 2, str(o.line_number))
-                    index += 1
+            # and update the columns in the catalog
+            self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('definition'))
+
+            index = 0
+            for o in self.notebook.objects:
+                self.InsertStringItem(index, o.definition)
+                self.SetStringItem(index, 1, str(o.filename))
+                self.SetStringItem(index, 2, str(o.line_number))
+                index += 1
 
 
 def search_for_objects(code, file_name):

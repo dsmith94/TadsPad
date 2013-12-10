@@ -229,8 +229,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             if len(self.GetLine(line - 1).strip()) > 0:
                 self.InsertText(self.GetAnchor(), "\n;")
                 self.SetLineIndentation(line, 0)
-                self.SetLineIndentation(line + 1, self.GetIndent())
-                self.SetLineIndentation(line + 2, 0)
+                self.SetLineIndentation(line + 1, 0)
 
     def auto_complete(self):
 
@@ -357,7 +356,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                         return self.Text[start_of_word:end_of_word].strip()
         return ""
 
-    def save(self, path, filename, object_browser):
+    def save(self, path, filename):
 
         # save contents of editor to file
         try:
@@ -366,11 +365,23 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             f.close()
             self.filename = filename
             self.path = path
-            object_browser.rebuild_object_catalog()
             return True
         except IOError, e:
             MessageSystem.error("Could not save file: " + e.filename, "File save failure")
             return False
+
+
+def search_dictionary(entries, dictionary):
+
+    # perform a case-insensitve search on this dictionary and return the entries that match
+    keys = dictionary.keys()
+    return_value = ""
+    for key in keys:
+        for entry in entries:
+            print key, entry.lower()
+            if entry.lower() in key.lower():
+                return_value += entry + "^"
+    return return_value
 
 
 def check_for_plain_style(style):
@@ -429,11 +440,11 @@ def filter_suggestions(word, separated_string, filter_out):
     if filter_out is not "":
         for token in tokens:
             if filter_out not in token:
-                if word in token:
+                if word.lower() in token.lower():
                     return_value += token + "^"
     else:
         for token in tokens:
-            if word in token:
+            if word.lower() in token.lower():
                 return_value += token + "^"
     return_value.strip("^")
     return return_value

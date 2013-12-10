@@ -90,19 +90,19 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
                 return_value.append(page.editor.filename)
         return return_value
 
-    def save_page(self, object_browser):
+    def save_page(self):
 
         # save currently selected page
         index = self.GetSelection()
         page = self.GetPage(index)
         if page.editor.filename == "untitled":
-            self.save_page_as(object_browser)
+            self.save_page_as()
             return
-        if page.editor.save(page.editor.path, page.editor.filename, object_browser):
+        if page.editor.save(page.editor.path, page.editor.filename):
             page.editor.saved = True
             self.SetPageText(index, page.editor.filename)
 
-    def save_page_as(self, object_browser):
+    def save_page_as(self):
 
         # create a dialog box allowing user to set filename
         path = os.path.abspath(os.path.expanduser("~/Documents/TADS 3/" + self.project_name + "/"))
@@ -113,20 +113,20 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
         else:
             index = self.GetSelection()
             page = self.GetPage(index)
-            if page.editor.save(saveFileDialog.Path, saveFileDialog.Filename, object_browser):
+            if page.editor.save(saveFileDialog.Path, saveFileDialog.Filename):
                 page.editor.saved = True
                 self.SetPageText(index, page.editor.filename)
 
-    def save_all(self, object_browser):
+    def save_all(self):
 
         # save all opened pages that have been modified
         # loop through all pages to do it
         index = 0
         for page in self:
             if page.editor.filename == "untitled":
-                self.save_page_as(object_browser)
+                self.save_page_as()
             if page.editor.saved is not True:
-                if page.editor.save(page.editor.path, page.editor.filename, object_browser):
+                if page.editor.save(page.editor.path, page.editor.filename):
                     page.editor.saved = True
                     self.SetPageText(index, page.editor.filename)
             index += 1
@@ -139,11 +139,11 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
             from shutil import copyfile
             copyfile("./blank.tmp", the_project.path + "/" + name + ".t")
             the_project.files.append(name + ".t")
-            self.load_page(the_project.path, name + ".t", the_project.title)
+            self.load_page(the_project.path, name + ".t", the_project.name)
         except IOError, e:
             MessageSystem.error("Unable to write new file: " + name + ".t", "No new file added - " + e.filename)
 
-    def load_page(self, path, filename, title, line_number=0):
+    def load_page(self, path, filename, prj_name, line_number=0):
 
         # load page with filename passed above
         tp = wx.Panel(self)
@@ -155,7 +155,7 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
         tp.editor.path = path
         try:
             code = open(path + "/" + filename, 'r')
-            tp.editor.SetText(code.read().replace("$FILENAME$", filename).replace("$TITLE$", title))
+            tp.editor.SetText(code.read().replace("$FILENAME$", filename).replace("$TITLE$", prj_name))
             code.close()
         except IOError, e:
             MessageSystem.error("Not able to open file: " + e.filename, "File load error")

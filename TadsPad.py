@@ -69,7 +69,7 @@ class MainWindow(wx.Frame):
 
             # name is valid, so continue
             if new_name != "":
-                self.notebook.new_page(new_name, self.project, self.object_browser)
+                self.notebook.new_page(new_name, self.project)
                 self.project_browser.update_files()
 
             # name is not valid, forget it
@@ -164,19 +164,22 @@ class MainWindow(wx.Frame):
     def save_page(self, event):
 
         # save this page
-        self.notebook.save_page(self.object_browser)
+        self.notebook.save_page()
+        self.object_browser.rebuild_object_catalog()
         self.project_browser.update_files()
 
     def save_page_as(self, event):
 
         # save this page under another filename
-        self.notebook.save_page_as(self.object_browser)
+        self.notebook.save_page_as()
+        self.object_browser.rebuild_object_catalog()
         self.project_browser.update_files()
 
     def save_all(self, event):
 
         # save all modified files
-        self.notebook.save_all(self.object_browser)
+        self.notebook.save_all()
+        self.object_browser.rebuild_object_catalog()
         self.project_browser.update_files()
 
     def insist_on_new_project(self):
@@ -221,7 +224,7 @@ class MainWindow(wx.Frame):
             self.project.title = get_title
             self.project.author = get_author
             ProjectFileSystem.new_project(get_name, self.project)
-            self.notebook.load_page(self.project.path, "start.t", self.project.title, self.object_browser)
+            self.notebook.load_page(self.project.path, "start.t", self.project.title)
 
         else:
             if insist_mode:

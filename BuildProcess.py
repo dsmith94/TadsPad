@@ -31,6 +31,7 @@ def run(the_thread, the_project):
         wx.CallAfter(subprocess.Popen, interpreter + "\"" + os.path.join(the_project.path, the_project.name + ".t3") +
                      "\"", shell=False)
     else:
-        wx.CallAfter(MessageSystem.show_errors, output)
+        print output
+        #wx.CallAfter(MessageSystem.show_errors, output)
 
 __author__ = 'dj'
