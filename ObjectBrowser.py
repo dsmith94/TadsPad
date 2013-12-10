@@ -46,7 +46,7 @@ class ObjectBrowser(wx.ListCtrl):
         r = wx.Display().GetGeometry()
         self.InsertColumn(0, "Object", width=r.Width / 11)
         self.InsertColumn(1, "file")
-\        self.InsertColumn(2, "line")
+        self.InsertColumn(2, "line")
 
         # set reference to notebook
         self.notebook = notebook
