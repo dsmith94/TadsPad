@@ -2,14 +2,13 @@
 # object class for notebook - tabbed browser of code windows
 
 import wx
-import re
 import wx.stc
 import wx.lib.agw.aui
 import Editor
 import MessageSystem
 import os.path
 import glob
-import ObjectBrowser
+import atd
 
 
 class Notebook(wx.lib.agw.aui.AuiNotebook):
@@ -250,6 +249,21 @@ class Notebook(wx.lib.agw.aui.AuiNotebook):
                 if subclass in self.auto_code_dictionary:
                     self.auto_code_dictionary[subclass] += self.auto_code_dictionary[name_of_superclass]
             superclass_data.close()
+
+    def spellcheck(self):
+
+        # get opened editor page
+        index = self.GetSelection()
+        page = self.GetPage(index)
+
+        # pull strings from page and send to atd
+        strings = page.editor.extract_strings()
+        errors = atd.checkDocument(strings, "TadsPad_" + self.project_name.replace(" ", "_"))
+
+        # we now have a list of spelling errors, display to user
+        if errors:
+            for e in errors:
+                print e
 
 
 __author__ = 'dj'

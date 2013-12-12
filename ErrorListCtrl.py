@@ -25,24 +25,27 @@ class ErrorListCtrl(wx.ListCtrl):
         self.InsertColumn(1, "file")
         self.InsertColumn(2, "line")
 
-    def process_errors_string(self, errors_list):
+    def process_errors_string(self, errors_string):
 
         # process a string containing errors from tads compiler
         self.DeleteAllItems()
 
         # clean up errors string and search
-        errors_list = errors_list.replace("\r\n", "\n")
-        errors_list = errors_list.replace("\r", "\n")
-        errors_list = re.sub("\t.*", "\n", errors_list)
-        error_groups = re.findall("\n(.*)\((\d*)\):\serror: \n(.*)\n\n", errors_list, flags=re.DOTALL)
-
-        # first in list is the file, second is the linenumber, third is the error itself
-        index = 0
-        for e in error_groups:
-            self.InsertStringItem(index, "\n" + e[2])
-            self.SetStringItem(index, 1, os.path.basename(e[0]))
-            self.SetStringItem(index, 2, e[1])
-            index += 1
+        errors_string = errors_string.replace("\r", "\n")
+        errors = errors_string.split("\n\n\n\n")
+        if len(errors) > 0:
+            errors[0] = errors[0][errors[0].find(".t3s\n") + 4:]
+            index = 0
+            for e in errors:
+                error_groups = re.search("(.*)\((\d*)\): error: \n(.*)", e, flags=re.DOTALL)
+                
+                # first in list is the file, second is the linenumber, third is the error itself
+                if error_groups:
+                    error_groups = error_groups.groups()
+                    self.InsertStringItem(index, "\n" + error_groups[2])
+                    self.SetStringItem(index, 1, os.path.basename(error_groups[0]))
+                    self.SetStringItem(index, 2, error_groups[1])
+                    index += 1
 
     def error_entry_activated(self, event):
 

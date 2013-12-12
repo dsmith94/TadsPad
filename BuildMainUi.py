@@ -103,12 +103,15 @@ def create_menu_system(top_window):
     copy_item = edit_menu.Append(wx.ID_COPY, 'Copy\tCtrl+C', 'Copy')
     paste_item = edit_menu.Append(wx.ID_PASTE, 'Paste\tCtrl+V', 'Paste')
     edit_menu.AppendSeparator()
+    spell_item = edit_menu.Append(wx.ID_ANY, 'Spell Check\tF7', 'After the Deadline Spell Check')
+    edit_menu.AppendSeparator()
     preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Preferences', 'Preferences')
     top_window.Bind(wx.EVT_MENU, top_window.undo, undo_item)
     top_window.Bind(wx.EVT_MENU, top_window.redo, redo_item)
     top_window.Bind(wx.EVT_MENU, top_window.cut, cut_item)
     top_window.Bind(wx.EVT_MENU, top_window.copy, copy_item)
     top_window.Bind(wx.EVT_MENU, top_window.paste, paste_item)
+    top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_item)
 
     # view menu
     view_menu = wx.Menu()

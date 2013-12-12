@@ -370,6 +370,30 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             MessageSystem.error("Could not save file: " + e.filename, "File save failure")
             return False
 
+    def extract_strings(self):
+
+        # pull strings out from the current edtior window - return one massive string with only strings text
+        index = 0
+        return_value = ""
+        editor_text = self.GetText()
+        for i in editor_text:
+
+            # is this char valid? not outside of a string?
+            single_strings = 9
+            double_strings = 10
+            style = self.GetStyleAt(index)
+            if i == "\n":
+                return_value += "\n"
+            if style == single_strings or style == double_strings:
+
+                # also, skip the quotes
+                if i is not "\'" and i is not "\"":
+                    return_value += i
+
+            index += 1
+
+        return return_value.replace("\\", "")
+
 
 def search_dictionary(entries, dictionary):
 

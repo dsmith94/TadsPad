@@ -233,6 +233,11 @@ class MainWindow(wx.Frame):
 
         self.project_browser.update_files()
 
+    def spell_check(self, event):
+
+        # spell check system through atd web service
+
+        self.notebook.spellcheck()
 
 
 # run main window (top)
