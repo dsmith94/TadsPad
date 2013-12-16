@@ -237,14 +237,16 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.SetCurrentPos(self.GetLineIndentPosition(line))
         self.SetAnchor(self.GetLineIndentPosition(line))
 
-        # if indentation is zero, auto add ; for bracing
-        """
-        if self.GetLineIndentation(line) == 0:
-            if len(self.GetLine(line - 1).strip()) > 0:
-                self.InsertText(self.GetAnchor(), "\n;")
-                self.SetLineIndentation(line, 0)
-                self.SetLineIndentation(line + 1, 0)
-        """
+    def handle_not_in_object(self):
+
+        # when our cursor is not in an object, add a small subset of suggestions
+        defaults = "DefineIAction(Verb)", "DefineTAction(Verb)", "DefineTIAction(Verb)", "VerbRule(Verb)"
+        current_word = self.get_full_word()
+        return_value = ""
+        for word in defaults:
+            if current_word in word:
+                return_value += word + "^"
+        return return_value
 
     def auto_complete(self):
 
@@ -268,6 +270,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         suggestions = filter_suggestions(present_word, pre_filtered_suggestions[0], pre_filtered_suggestions[1])
         if len(suggestions) > 0:
             self.AutoCompShow(len(present_word), suggestions)
+        else:
+            self.AutoCompCancel()
 
     def build_suggestions(self, code):
 
@@ -300,8 +304,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             else:
                 # we're not editing an object, so provide the verb creation options if no indent is set
                 if self.GetLineIndentation(self.GetCurrentLine()) == 0:
-                    return "DefineIAction(Verb)^" + "DefineTAction(Verb)^" + "DefineTIAction(Verb)^" \
-                           + "VerbRule(Verb)", ""
+                    return self.handle_not_in_object(), ""
         # apply object listing first
         for o in self.notebook.objects:
             suggestions += o.definition + "^"
