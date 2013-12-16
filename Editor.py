@@ -158,6 +158,19 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # we may choose to code templates
         selection = event.GetText()
         position = self.GetAnchor()
+        # line = self.GetCurLine()
+
+        # for when we insert anything ending in the word "Desc" add double quotes
+        if selection[-4:] == "Desc":
+            self.InsertText(position, " = \"\"")
+
+        # for when we insert anything ending in the word "Msg" add double quotes
+        if selection[-3:] == "Msg":
+            self.InsertText(position, " = \'\'")
+
+        # adding a new room? insert ;
+        if selection == "Room":
+            self.InsertText(position, self.insert_indent(1) + "\n;")
 
         # for define indirect action
         if "DefineIAction" in selection:
@@ -225,11 +238,13 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.SetAnchor(self.GetLineIndentPosition(line))
 
         # if indentation is zero, auto add ; for bracing
+        """
         if self.GetLineIndentation(line) == 0:
             if len(self.GetLine(line - 1).strip()) > 0:
                 self.InsertText(self.GetAnchor(), "\n;")
                 self.SetLineIndentation(line, 0)
                 self.SetLineIndentation(line + 1, 0)
+        """
 
     def auto_complete(self):
 
