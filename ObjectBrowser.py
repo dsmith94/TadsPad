@@ -65,7 +65,7 @@ class ObjectBrowser(wx.ListCtrl):
 
         # rebuild objects catalog from the source files listed in our makefile
 
-        self.notebook.objects = []
+        self.notebook.objects = list()
         self.DeleteAllItems()
 
         # loop through all files in project, and get objects in each
@@ -87,15 +87,15 @@ class ObjectBrowser(wx.ListCtrl):
                     # add object to our master object list
                     self.notebook.objects.append(o)
 
-            # and update the columns in the catalog
-            self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('definition'))
+        # and update the columns in the catalog
+        self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('definition'))
 
-            index = 0
-            for o in self.notebook.objects:
-                self.InsertStringItem(index, o.definition)
-                self.SetStringItem(index, 1, str(o.filename))
-                self.SetStringItem(index, 2, str(o.line_number))
-                index += 1
+        index = 0
+        for o in self.notebook.objects:
+            self.InsertStringItem(index, o.definition)
+            self.SetStringItem(index, 1, str(o.filename))
+            self.SetStringItem(index, 2, str(o.line_number))
+            index += 1
 
 
 def search_for_objects(code, file_name):
@@ -107,7 +107,10 @@ def search_for_objects(code, file_name):
     lines = code.split("\n")
     line_number = 0
     for line in lines:
-        object_definition_search = re.search(object_looks_like, line)
+        object_definition_search = None
+        if len(line) > 0:
+            if line[0] != " ":
+                object_definition_search = re.search(object_looks_like, line)
         if object_definition_search:
 
             # we have an object definition, add to our list with the line number file and classes
