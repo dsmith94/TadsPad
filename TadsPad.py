@@ -12,11 +12,19 @@ import BuildProcess
 import ProjectFileSystem
 import pickle
 import os
+import sys
 
 
 class MainWindow(wx.Frame):
     def __init__(self, title):
         wx.Frame.__init__(self, None, title=title)
+
+        # find config data
+        self.config_path = ""
+        if sys.platform == 'win32':
+            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad/prefs.conf")
+        else:
+            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad/prefs.conf")
 
         # user preferences - blank by default, until we load something in them
         self.preferences = {}
@@ -79,17 +87,16 @@ class MainWindow(wx.Frame):
     def on_load(self):
 
         # when loading tadspad, check for existence of program preferences
-        path = os.path.join(os.getenv('APPDATA'), "tadspad/prefs.conf")
-        if os.path.exists(path):
+        if os.path.exists(self.config_path):
 
             # it exists! load file so we get prefs from last time
             try:
-                the_file = open(path, 'rb')
+                the_file = open(self.config_path, 'rb')
                 self.preferences = pickle.load(the_file)
                 the_file.close()
                 self.load_preferences()
             except IOError:
-                MessageSystem.error("Could not read file: " + path, path + " corrupted")
+                MessageSystem.error("Could not read file: " + self.config_path, self.config_path + " corrupted")
 
             return
 
@@ -113,13 +120,13 @@ class MainWindow(wx.Frame):
     def save_preferences(self):
 
         # save preferences to file before quit
-        path = os.getenv('APPDATA') + "/tadspad"
+        path = os.path.dirname(self.config_path)
+        print path
         if not os.path.exists(path):
             os.makedirs(path)
-        path += "/prefs.conf"
         self.preferences.update({"last project": os.path.join(self.project.path, self.project.filename)})
         try:
-            output = open(path, 'wb')
+            output = open(self.config_path, 'wb')
             pickle.dump(self.preferences, output)
             output.close()
         except IOError, e:
