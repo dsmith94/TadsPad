@@ -3,7 +3,7 @@
 
 import wx
 import wx.stc
-import wx.lib.agw.aui
+import wx.lib.agw.aui as Aui
 import Editor
 import MessageSystem
 import os.path
@@ -11,22 +11,22 @@ import glob
 import atd
 
 
-class Notebook(wx.lib.agw.aui.AuiNotebook):
+class Notebook(Aui.AuiNotebook):
     """
     Notebook class, extended for our purposes
     """
 
     #----------------------------------------------------------------------
     def __init__(self, parent):
-        wx.lib.agw.aui.AuiNotebook.__init__(self, parent=parent)
-        self.default_style = \
-            wx.lib.agw.aui.AUI_NB_DEFAULT_STYLE | wx.lib.agw.aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
+        Aui.AuiNotebook.__init__(self, parent=parent)
+        self.default_style = Aui.AUI_NB_DEFAULT_STYLE | Aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
         self.SetWindowStyleFlag(self.default_style)
+        self.SetArtProvider(Aui.ChromeTabArt())     # chang tab art to be cross-platform friendly
         self.project_name = "unnamed project"
         self.auto_code_dictionary = {}
         self.auto_code_tooltips = {}
-        self.Bind(wx.lib.agw.aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
-        self.Bind(wx.lib.agw.aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
+        self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
+        self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
         self.get_auto_code_data()
 
         # the objects!
