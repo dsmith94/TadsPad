@@ -106,8 +106,14 @@ A PathPassage is a Passage that represents a path, so that following it or going
 RearContainer
 An RearContainer is a Thing that other things can be put behind.
 
+Region
+A Region is an object representing several rooms or even several other Regions.
+
 Room
 A Room is a top location in which the player character, other actors and other objects may be located. It may represent any discrete unit of space, not necessarily a room in a building. Normally actors may only interact with objects in the same room as themselves, but the senseRegion module allows us to define sensory connections between rooms.
+
+SenseRegion
+A SenseRegion is a special kind of Region allowing sensory connection between rooms.
 
 SimpleAttachable
 A SimpleAttachabe is a Thing that can be attached to other things or have other things attached to it in the special case in which the attached objects are located in the object to which they are attached. SimpleAttachable is also the base class for other types of attachable.

@@ -21,7 +21,7 @@ class Notebook(Aui.AuiNotebook):
         Aui.AuiNotebook.__init__(self, parent=parent)
         self.default_style = Aui.AUI_NB_DEFAULT_STYLE | Aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
         self.SetWindowStyleFlag(self.default_style)
-        self.SetArtProvider(Aui.ChromeTabArt())     # chang tab art to be cross-platform friendly
+        self.SetArtProvider(Aui.ChromeTabArt())     # change tab art to be cross-platform friendly
         self.project_name = "unnamed project"
         self.auto_code_dictionary = {}
         self.auto_code_tooltips = {}

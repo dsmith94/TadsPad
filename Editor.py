@@ -146,8 +146,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # when quotes added, autoadd quotes
         if event.GetKey() == 34:
             self.add_double_quotes()
-        if event.GetKey() == 39:
-            self.add_single_quotes()
+        #if event.GetKey() == 39:
+        #    self.add_single_quotes()
 
         # handle autocompletion too
         self.auto_complete()
@@ -164,13 +164,17 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if selection[-4:] == "Desc":
             self.InsertText(position, " = \"\"")
 
-        # for when we insert anything ending in the word "Msg" add double quotes
+        # for when we insert anything ending in the word "Msg" add single quotes
         if selection[-3:] == "Msg":
             self.InsertText(position, " = \'\'")
 
         # adding a new room? insert ;
         if selection == "Room":
             self.InsertText(position, self.insert_indent(1) + "\n;")
+
+        # regions
+        if selection == "regions":
+            self.InsertText(position, " = [  ]")
 
         # for define indirect action
         if "DefineIAction" in selection:
@@ -240,7 +244,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def handle_not_in_object(self):
 
         # when our cursor is not in an object, add a small subset of suggestions
-        defaults = "DefineIAction(Verb)", "DefineTAction(Verb)", "DefineTIAction(Verb)", "VerbRule(Verb)"
+        defaults = "DefineIAction(Verb)", "DefineTAction(Verb)", "DefineTIAction(Verb)", "VerbRule(Verb)", "class"
         current_word = self.get_full_word()
         return_value = ""
         for word in defaults:
@@ -266,6 +270,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # note - separator betwixt keywords in final string is a ^
         present_word = self.get_word()
         if len(present_word) < 1:
+            return
+        if present_word is "=":
             return
         suggestions = filter_suggestions(present_word, pre_filtered_suggestions[0], pre_filtered_suggestions[1])
         if len(suggestions) > 0:
