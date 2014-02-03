@@ -7,6 +7,7 @@
 
 import wx
 import BuildMainUi
+import TranscriptView
 import MessageSystem
 import BuildProcess
 import ProjectFileSystem
@@ -121,7 +122,6 @@ class MainWindow(wx.Frame):
 
         # save preferences to file before quit
         path = os.path.dirname(self.config_path)
-        print path
         if not os.path.exists(path):
             os.makedirs(path)
         self.preferences.update({"last project": os.path.join(self.project.path, self.project.filename)})
@@ -243,8 +243,13 @@ class MainWindow(wx.Frame):
     def spell_check(self, event):
 
         # spell check system through atd web service
+        self.notebook.spellcheck(self.project)
 
-        self.notebook.spellcheck()
+    def load_transcript_view(self, event):
+
+        # load transcript viewer with commands from last play-through
+        transcript_viewer = TranscriptView.TranscriptViewWindow(self.project)
+        transcript_viewer.Show()
 
 
 # run main window (top)

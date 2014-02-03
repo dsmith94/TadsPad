@@ -118,6 +118,13 @@ def create_menu_system(top_window):
     debug_pane_item = view_menu.Append(wx.ID_ANY, 'Message Pane', 'Toggle Message Pane')
     object_pane_item = view_menu.Append(wx.ID_ANY, 'Object Pane', 'Toggle Object Pane')
 
+    # tools menu
+    tools_menu = wx.Menu()
+    view_transcript_item = tools_menu.Append(wx.ID_ANY, 'View Transcript', 'Command Transcript View Window')
+    top_window.Bind(wx.EVT_MENU, top_window.load_transcript_view, view_transcript_item)
+    spell_checker_item = tools_menu.Append(wx.ID_ANY, 'Spell Check', 'Check Spelling in All Game Strings')
+    top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_checker_item)
+
     # help menu
     help_menu = wx.Menu()
     tutorial_item = help_menu.Append(wx.ID_HELP_CONTENTS, 'Tutorial', 'Tutorial')
@@ -132,6 +139,7 @@ def create_menu_system(top_window):
     menu_bar.Append(file_menu, '&File')
     menu_bar.Append(edit_menu, '&Edit')
     menu_bar.Append(view_menu, '&View')
+    menu_bar.Append(tools_menu, '&Tools')
     menu_bar.Append(help_menu, '&Help')
     top_window.SetMenuBar(menu_bar)
 

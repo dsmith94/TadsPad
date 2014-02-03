@@ -5,7 +5,10 @@ import wx
 import wx.stc
 import sys
 import re
+import atd
+import SpellCheckerWindow
 import MessageSystem
+import os
 
 
 # english defaults for verify, check
@@ -18,6 +21,7 @@ pattern_line_comments = re.compile("//.*")
 pattern_block_comments = re.compile("/\*.*?\*/", flags=re.S)
 pattern_double_quotes = re.compile("\".+?\"", flags=re.S)
 pattern_single_quotes = re.compile("\'.*?\'", flags=re.S)
+pattern_escape_quotes = re.compile(r"\\'", flags=re.S)
 pattern_enclosure = re.compile("\n\s*\{")
 pattern_object = re.compile("\+*\s*([a-zA-Z]*):")
 pattern_classes = re.compile(": ([\w*|,|\s])*")
@@ -396,27 +400,45 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
     def extract_strings(self):
 
-        # pull strings out from the current edtior window - return one massive string with only strings text
-        index = 0
-        return_value = ""
-        editor_text = self.GetText()
-        for i in editor_text:
+        # return strings in this editor, cleaned of html
+        text = self.GetText()
+        remove_patterns = pattern_block_comments, pattern_line_comments
+        for pattern in remove_patterns:
+            text = pattern.sub("", text)
 
-            # is this char valid? not outside of a string?
-            single_strings = 9
-            double_strings = 10
-            style = self.GetStyleAt(index)
-            if i == "\n":
-                return_value += "\n"
-            if style == single_strings or style == double_strings:
+        # temporarily remove escape quotes
+        text = pattern_escape_quotes.sub("[&escape &goes &here]", text)
 
-                # also, skip the quotes
-                if i is not "\'" and i is not "\"":
-                    return_value += i
+        # extract strings
+        all_double_quotes_strings = pattern_double_quotes.findall(text)
+        text = pattern_double_quotes.sub("", text)
+        all_single_quotes_strings = pattern_single_quotes.findall(text)
+        return_text = ""
+        for string in all_double_quotes_strings:
+            return_text += string.strip("\"") + "\n"
+        for string in all_single_quotes_strings:
+            return_text += string.strip("\'") + "\n"
+        return_text = return_text.replace("[&escape &goes &here]", "\'")
+        return return_text
 
-            index += 1
+    def spellcheck(self, project):
 
-        return return_value.replace("\\", "")
+        # pull strings from page and send to atd spellcheck service
+        strings = self.extract_strings()
+        errors = atd.checkDocument(strings, "TadsPad_" + self.notebook.project_name)
+
+        # pull in ignored words from ignored.txt
+        ignored_file = open(os.path.join(project.path, "ignore.txt"), 'rU')
+        ignored_words = ignored_file.read().split("\n")
+        ignored_file.close()
+        for error in errors:
+            if error.string in ignored_words:
+                errors.remove(error)
+
+        # we now have a list of spelling errors, display to user
+        if errors:
+            speller = SpellCheckerWindow.SpellCheckWindow(errors, self, project)
+            speller.Show()
 
 
 def search_dictionary(entries, dictionary):

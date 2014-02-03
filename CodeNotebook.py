@@ -8,7 +8,6 @@ import Editor
 import MessageSystem
 import os.path
 import glob
-import atd
 
 
 class Notebook(Aui.AuiNotebook):
@@ -153,7 +152,7 @@ class Notebook(Aui.AuiNotebook):
         tp.editor.filename = filename
         tp.editor.path = path
         try:
-            code = open(path + "/" + filename, 'r')
+            code = open(path + "/" + filename, 'rU')
             tp.editor.SetText(code.read().replace("$FILENAME$", filename).replace("$TITLE$", prj_name))
             code.close()
         except IOError, e:
@@ -250,20 +249,12 @@ class Notebook(Aui.AuiNotebook):
                     self.auto_code_dictionary[subclass] += self.auto_code_dictionary[name_of_superclass]
             superclass_data.close()
 
-    def spellcheck(self):
+    def spellcheck(self, project):
 
-        # get opened editor page
+        # get opened editor page and check spelling
         index = self.GetSelection()
         page = self.GetPage(index)
-
-        # pull strings from page and send to atd
-        strings = page.editor.extract_strings()
-        errors = atd.checkDocument(strings, "TadsPad_" + self.project_name.replace(" ", "_"))
-
-        # we now have a list of spelling errors, display to user
-        if errors:
-            for e in errors:
-                print e
+        page.editor.spellcheck(project)
 
 
 __author__ = 'dj'

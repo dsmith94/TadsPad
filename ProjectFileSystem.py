@@ -10,6 +10,7 @@ import MessageSystem
 import unicodedata
 import string
 import hashlib
+import shutil
 from binascii import hexlify
 
 
@@ -137,14 +138,14 @@ def new_project(name_of_project, the_project):
 
     # create new project
     path_string = get_project_root()
-    os.makedirs(path_string + name_of_project + "/")
-    os.makedirs(path_string + name_of_project + "/obj/")
-    path_string = path_string + name_of_project + "/"
+    os.makedirs(os.path.join(path_string, name_of_project))
+    os.makedirs(os.path.join(path_string, name_of_project, "obj"))
+    path_string = os.path.join(path_string, name_of_project)
     write_makefile(name_of_project, the_project.files)
     the_project.name = name_of_project
     the_project.filename = name_of_project + ".t3m"
     the_project.path = path_string
-
+    shutil.copyfile("ignore.tmp", os.path.join(path_string, "ignore.txt"))
     try:
         start_tmp = open("./start.tmp", 'r')
         start_tmp_text = start_tmp.read()
@@ -163,5 +164,6 @@ def new_project(name_of_project, the_project):
     except IOError, e:
         MessageSystem.error("Could not retrieve data from file: start.tmp. Error:" + e.filename,
                             "Failed to create project")
+
 
 __author__ = 'dj'

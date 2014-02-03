@@ -21,16 +21,20 @@ def run(the_thread, the_project):
     MessageSystem.show_message("Building " + the_project.name + "...")
     ProjectFileSystem.write_makefile(the_project.name, the_project.files)
     tads3path = "\"C:/Program Files/TADS 3/t3make.exe\" "
+    options = " -o \"" + os.path.join(the_project.path, "transcript.txt\" ")
     interpreter = "\"C:/Program Files/TADS 3/htmlt3.exe\" "
     project_to_compile = "-f \"" + the_project.path + "/" + the_project.filename + "\""
-    process = subprocess.Popen(tads3path + project_to_compile, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output = process.communicate()[0]
-    exit_code = process.returncode
+    compile_process = subprocess.Popen(tads3path + project_to_compile, shell=True, stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT)
+    output = compile_process.communicate()[0]
+    exit_code = compile_process.returncode
     if exit_code == 0:
         wx.CallAfter(MessageSystem.show_message, "Compile complete")
-        wx.CallAfter(subprocess.Popen, interpreter + "\"" + os.path.join(the_project.path, the_project.name + ".t3") +
-                     "\"", shell=False)
+        wx.CallAfter(subprocess.Popen, interpreter + options + "\"" + os.path.join(the_project.path, the_project.name +
+                                                                                   ".t3") + "\"", shell=True,
+                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     else:
         wx.CallAfter(MessageSystem.show_errors, output)
+
 
 __author__ = 'dj'
