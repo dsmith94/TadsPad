@@ -431,7 +431,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         ignored_file = open(os.path.join(project.path, "ignore.txt"), 'rU')
         ignored_words = ignored_file.read().split("\n")
         ignored_file.close()
-        for error in errors:
+        errors_copy = errors[:]
+        for error in errors_copy:
             if error.string in ignored_words:
                 errors.remove(error)
 
