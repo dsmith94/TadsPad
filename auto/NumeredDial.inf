@@ -1,8 +1,0 @@
-maxSetting
-The highest number to which this dial can be turned.
-
-minSetting
-The lowest number to which this dial can be turned.
-
-isValidSetting (val)
-Is val a valid setting for this dial?

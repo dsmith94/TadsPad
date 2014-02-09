@@ -1,8 +1,0 @@
-Boolean object autocomp data
-used when we expect a possible boolean value
-
-true
-Boolean true
-
-nil
-Boolean false (nil)

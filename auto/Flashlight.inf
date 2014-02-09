@@ -1,8 +1,0 @@
-dobjFor(Extinguish)
-Extinguishing a Flashlight is equivalent to switching it off
-
-dobjFor(Light)
-Lighting a Flashlight is equivalent to switching it on
-
-makeOn (stat)
-Turning a Flashlight on and off makes it lit or unlit

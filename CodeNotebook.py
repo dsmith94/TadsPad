@@ -2,12 +2,14 @@
 # object class for notebook - tabbed browser of code windows
 
 import wx
+import re
 import wx.stc
 import wx.lib.agw.aui as Aui
 import Editor
 import MessageSystem
 import os.path
 import glob
+import TClass
 
 
 class Notebook(Aui.AuiNotebook):
@@ -22,11 +24,12 @@ class Notebook(Aui.AuiNotebook):
         self.SetWindowStyleFlag(self.default_style)
         self.SetArtProvider(Aui.ChromeTabArt())     # change tab art to be cross-platform friendly
         self.project_name = "unnamed project"
-        self.auto_code_dictionary = {}
-        self.auto_code_tooltips = {}
+        self.classes = parse_library()
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
-        self.get_auto_code_data()
+
+        # build class cache on load
+        parse_library()
 
         # the objects!
         self.objects = list()
@@ -146,7 +149,7 @@ class Notebook(Aui.AuiNotebook):
         # load page with filename passed above
         tp = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        tp.editor = Editor.EditorCtrl(self.auto_code_tooltips, tp, self.auto_code_dictionary, self)
+        tp.editor = Editor.EditorCtrl(self.classes, tp, self)
         tp.SetSizerAndFit(sizer)
         sizer.Add(tp.editor, 1, wx.EXPAND | wx.ALL)
         tp.editor.filename = filename
@@ -214,47 +217,39 @@ class Notebook(Aui.AuiNotebook):
             if MessageSystem.ask("Really close " + page.editor.filename + "?", "Unsaved data") is False:
                 event.Veto()
 
-    def get_auto_code_data(self):
-
-        # load all documents that give us data on classes
-        # then parse into code entries and definitions
-
-        list_of_docs = glob.glob("./auto/*.inf")
-        for doc in list_of_docs:
-            doc_file = open(doc, 'r')
-            name_of_class = doc_file.name[7:-4]
-            code_definitions_list = doc_file.read().replace("\r", "").split("\n\n")
-            for definition in code_definitions_list:
-                processed_definition = definition.split('\n', 1)
-                get_new_list_for_class = ""
-                if name_of_class in self.auto_code_dictionary:
-                    get_new_list_for_class = str(self.auto_code_dictionary[name_of_class]) + processed_definition[0] + "^"
-                self.auto_code_dictionary.update({name_of_class: get_new_list_for_class})
-                self.auto_code_dictionary[name_of_class].strip(" ")
-                if processed_definition[0] not in self.auto_code_tooltips:
-                    self.auto_code_tooltips.update({processed_definition[0]: processed_definition[1]})
-                if processed_definition[1] != "no description available":
-                    self.auto_code_tooltips.update({processed_definition[0]: processed_definition[1]})
-            doc_file.close()
-
-        # now that we have the definitions, parse the subclass files to figure out where all the subclassed
-        # properites go
-        list_of_superclasses = glob.glob("./auto/*.sub")
-        for superclass_file in list_of_superclasses:
-            superclass_data = open(superclass_file, 'r')
-            name_of_superclass = superclass_file[7:-4]
-            subclass_list = superclass_data.read().replace("\r", "").split("\n")
-            for subclass in subclass_list:
-                if subclass in self.auto_code_dictionary:
-                    self.auto_code_dictionary[subclass] += self.auto_code_dictionary[name_of_superclass]
-            superclass_data.close()
-
     def spellcheck(self, project):
 
         # get opened editor page and check spelling
         index = self.GetSelection()
-        page = self.GetPage(index)
-        page.editor.spellcheck(project)
+        if index >= 0:
+            page = self.GetPage(index)
+            page.editor.spellcheck(project)
+        else:
+            MessageSystem.error("Cannot spell-check without a valid TADS file open. ", "Spell check fail")
+
+
+def parse_library():
+
+    # parse all classes/members in the presently selected world-model library
+    path_string = os.path.expanduser('~/Documents/TADS 3/extensions/adv3lite')
+    sources_file = open(os.path.join(path_string, "adv3lite.tl"), 'rU')
+    sources_raw = sources_file.read()
+    sources_file.close()
+    lines = sources_raw.split('\n')
+    source_pattern = re.compile("source:\s(\w*)")
+    sources = []
+    for line in lines:
+        match = source_pattern.match(line)
+        if match:
+            sources.append(match.group(1))
+    classes = []
+    for source in sources:
+        code_file = open(os.path.join(path_string, source + ".t"), 'rU')
+        code = code_file.read()
+        code_file.close()
+        classes.extend(TClass.extract(code))
+    TClass.cross_reference(classes)
+    return classes
 
 
 __author__ = 'dj'

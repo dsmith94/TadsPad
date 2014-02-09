@@ -3,6 +3,7 @@ import wx
 import re
 import MessageSystem
 import operator
+import TClass
 
 
 # object browser subsystem
@@ -14,22 +15,6 @@ object_looks_like = "\+*\s*([a-zA-Z]*):"
 
 # this is what the classes look like
 classes_look_like = ": ([\w*|,|\s])*"
-
-
-class ObjectInMemory():
-
-    def __init__(self):
-
-        ## hang onto filename, linenumber, and definition
-        ## along with class information
-
-        self.classes = []
-        self.filename = None
-        self.definition = None
-        self.line_number = None
-
-    def __repr__(self):
-        return repr((self.definition, self.filename, self.line_number, self.classes))
 
 
 class ObjectBrowser(wx.ListCtrl):
@@ -88,13 +73,13 @@ class ObjectBrowser(wx.ListCtrl):
                     self.notebook.objects.append(o)
 
         # and update the columns in the catalog
-        self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('definition'))
+        self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))
 
         index = 0
         for o in self.notebook.objects:
-            self.InsertStringItem(index, o.definition)
-            self.SetStringItem(index, 1, str(o.filename))
-            self.SetStringItem(index, 2, str(o.line_number))
+            self.InsertStringItem(index, o.name)
+            self.SetStringItem(index, 1, str(o.file))
+            self.SetStringItem(index, 2, str(o.line))
             index += 1
 
 
@@ -115,17 +100,17 @@ def search_for_objects(code, file_name):
 
             # we have an object definition, add to our list with the line number file and classes
             if object_definition_search.start(0) == 0:
-                object_definition = object_definition_search.group(0).strip(":").strip("+").strip("\r").strip("\n").strip()
+                object_definition = object_definition_search.group(0).strip(":").strip("+").strip("\n").strip()
                 if object_definition != "":
-                    o = ObjectInMemory()
-                    o.definition = object_definition
-                    o.line_number = line_number
-                    o.filename = file_name
+                    o = TClass.TClass()
+                    o.name = object_definition
+                    o.line = line_number
+                    o.file = file_name
                     search_for_classes = re.search(classes_look_like, line)
                     if search_for_classes:
                         classes = search_for_classes.group().strip(":").split(",")
                         for c in classes:
-                            o.classes.append(c.strip("\n").strip("\r").strip(" "))
+                            o.inherits.append(c.strip("\n").strip(" "))
                     objects_list.append(o)
 
         line_number += 1

@@ -86,7 +86,7 @@ class ColorSchemer:
 
 class EditorCtrl(wx.stc.StyledTextCtrl):
 
-    def __init__(self, help_dictionary, parent, auto_code_repo, notebook, style=wx.SIMPLE_BORDER):
+    def __init__(self, tads_classes, parent, notebook, style=wx.SIMPLE_BORDER):
 
         ## Constructor
         wx.stc.StyledTextCtrl.__init__(self, parent=parent, style=style)
@@ -96,7 +96,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.path = ""
 
         # context sensitive help reference
-        self.help = help_dictionary
+        self.classes = tads_classes
         self.Bind(wx.stc.EVT_STC_UPDATEUI, self.call_context_help)
 
         # autoindent system
@@ -126,7 +126,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.AutoCompSetSeparator(94)
         self.AutoCompSetDropRestOfWord(True)
         self.AutoCompSetIgnoreCase(1)
-        self.auto_code_dictionary = auto_code_repo
         self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.auto_code_selected)
 
         # reference to notebook
@@ -150,8 +149,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # when quotes added, autoadd quotes
         if event.GetKey() == 34:
             self.add_double_quotes()
-        #if event.GetKey() == 39:
-        #    self.add_single_quotes()
 
         # handle autocompletion too
         self.auto_complete()
@@ -162,7 +159,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # we may choose to code templates
         selection = event.GetText()
         position = self.GetAnchor()
-        # line = self.GetCurLine()
 
         # for when we insert anything ending in the word "Desc" add double quotes
         if selection[-4:] == "Desc":
@@ -267,7 +263,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # stage 2: take the processed code (now a list, divided into lines and backwards) and find
         # the classes of the object we're editing, plus the present enclosures
-        pre_filtered_suggestions = self.build_suggestions(code)
+        suggestions = self.build_suggestions(code)
 
         # stage 3: finally, gather context data from entered word
         # make string to send to the stc autocompletion box
@@ -277,7 +273,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             return
         if present_word is "=":
             return
-        suggestions = filter_suggestions(present_word, pre_filtered_suggestions[0], pre_filtered_suggestions[1])
         if len(suggestions) > 0:
             self.AutoCompShow(len(present_word), suggestions)
         else:
@@ -287,55 +282,94 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # build suggestions from the code passed above
         suggestions = ""
-        filter_out = ""
         lines = code.split("\n")
-        enclosures = in_enclosure(lines, action_token, verify_token, check_token, "objFor")
+        enclosures = in_enclosure(lines)
         in_verify = verify_token in enclosures
         in_check = check_token in enclosures
         in_action = action_token in enclosures
-        in_dobj = "objFor" in enclosures
+        in_dobj = "dobjFor" in enclosures
+        in_iobj = "iobjFor" in enclosures
 
-        # with some context info collected, build a list of library files form the "auto" directory to pull info from
-        library_files = []
-        check_on_line = self.get_line_suggestions(lines[-2])
-        if check_on_line is not None:
-            return check_on_line, ""
-        if in_dobj:
-            filter_out += "objFor"
-        if in_dobj and not in_verify and not in_check and not in_action:
-            library_files.append("ObjFor")
-        else:
+        # with some context info collected, build a list of library info
+        pre_return_list = []
+        if in_dobj or in_iobj:
+            if not in_verify and not in_check and not in_action:
+                pre_return_list.append("preCond")
+                pre_return_list.append(verify_token + "()")
+                pre_return_list.append(check_token + "()")
+                pre_return_list.append(action_token + "()")
+                for entry in pre_return_list:
+                    suggestions += entry + "^"
+                return suggestions
             if in_verify:
-                library_files.append("Verify")
-            classes = find_object(lines, self.notebook.objects)
-            if classes:
-                for c in classes:
-                    library_files.append(c)
-            else:
-                # we're not editing an object, so provide the verb creation options if no indent is set
-                if self.GetLineIndentation(self.GetCurrentLine()) == 0:
-                    return self.handle_not_in_object(), ""
+                pre_return_list.append("logicalRank(rank, key);")
+                pre_return_list.append("dangerous")
+                pre_return_list.append("illogicalNow(msg, params);")
+                pre_return_list.append("illogical(msg, params);")
+                pre_return_list.append("illogicalSelf(msg, params);")
+                pre_return_list.append("nonObvious")
+                pre_return_list.append("inaccessible(msg, params);")
+        inherits = find_object(lines, self.notebook.objects)
+        if inherits:
+            check_on_line = self.get_line_suggestions(lines[-2], inherits)
+            if check_on_line is not None:
+                return check_on_line, None
+            for i in inherits:
+                for c in self.classes:
+                    if i == c.name:
+                        for m in c.members:
+                            pre_return_list.append(m.name)
+        else:
+            # we're not editing an object, so provide the verb creation options if no indent is set
+            if self.GetLineIndentation(self.GetCurrentLine()) == 0:
+                return self.handle_not_in_object(), ""
+
         # apply object listing first
         for o in self.notebook.objects:
-            suggestions += o.definition + "^"
-        # then apply standard library defs
-        for entry in library_files:
-            if entry in self.auto_code_dictionary:
-                suggestions += self.auto_code_dictionary[entry] + "^"
-        return suggestions, filter_out
+            pre_return_list.append(o.name)
 
-    def get_line_suggestions(self, line):
+        # finalize for return
+        pre_return_list = list(set(pre_return_list))
+        pre_return_list = filter_suggestions(self.get_word(), pre_return_list)
+        pre_return_list.sort()
+        for entry in pre_return_list:
+            suggestions += entry + "^"
+        return suggestions
+
+    def get_line_suggestions(self, line, inherits):
 
         # recommend remap options for dobj and iobj
+        return_list = []
         if "dobj" in line:
-            return self.auto_code_dictionary["AsDobjFor"]
+            for c in self.classes:
+                for i in inherits:
+                    if c.name == i:
+                        for m in c.members:
+                            if "asDobjFor" in m.name:
+                                return_list.append(m.name)
         if "iobjFor" in line:
-            return self.auto_code_dictionary["AsIobjFor"]
+            for c in self.classes:
+                for i in inherits:
+                    if c.name == i:
+                        for m in c.members:
+                            if "asIobjFor" in m.name:
+                                return_list.append(m.name)
         if ":" in line:
             if self.GetLineIndentation(self.GetCurrentLine()) == 0:
                 # we're probably editing an object, provide object inheritance suggestions
-                return self.auto_code_dictionary["Classes"]
-        return None
+                for c in self.classes:
+                    return_list.append(c.name)
+        return_list = list(set(return_list))
+        if len(return_list) < 1:
+            return None
+        else:
+            return_string = ""
+            return_list = list(set(return_list))
+            return_list = filter_suggestions(self.get_word(), return_list)
+            return_list.sort()
+            for entry in return_list:
+                return_string += entry + "^"
+            return return_string
 
     def get_word(self):
 
@@ -355,20 +389,29 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # start by getting the full word the caret is on top of
         search_string = self.get_full_word()
-        if search_string != "":
+        for c in self.classes:
+            if search_string == c.name:
+                MessageSystem.show_message(c.name + ": " + c.help)
+                return
 
-            # isolate token from other chars that would confuse the help dictionary
-            pattern = re.compile("\s*([\w|]*)\s?\(?")
-            token = pattern.search(search_string)
+        # what else is the caret near? find object and classes
+        code = self.Text[0:self.GetAnchor() - 1]
+        code = clean_string(code)
+        lines = code.split('\n')
+        inherits = find_object(lines, self.notebook.objects)
 
-            # show help if the returned token exists in dictionary
-            if token is not None:
-                search_string = token.group(0)
-                if search_string != "":
-                    if search_string in self.help:
-                        MessageSystem.show_message(self.help[search_string])
-            else:
-                MessageSystem.show_message("")
+        # search for help in classes matching the search string
+        member = prep_member(search_string)
+        if 'objFor' in member:
+            MessageSystem.show_message("Action handling with: " + member)
+            return
+        if inherits:
+            for i in inherits:
+                for c in self.classes:
+                    if c.name == i:
+                        for m in c.members:
+                            if member == prep_member(m.name):
+                                MessageSystem.show_message(m.name + ": " + m.help)
 
     def get_full_word(self):
 
@@ -431,8 +474,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         ignored_file = open(os.path.join(project.path, "ignore.txt"), 'rU')
         ignored_words = ignored_file.read().split("\n")
         ignored_file.close()
-        errors_copy = errors[:]
-        for error in errors_copy:
+        for error in errors[:]:
             if error.string in ignored_words:
                 errors.remove(error)
 
@@ -440,19 +482,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if errors:
             speller = SpellCheckerWindow.SpellCheckWindow(errors, self, project)
             speller.Show()
-
-
-def search_dictionary(entries, dictionary):
-
-    # perform a case-insensitve search on this dictionary and return the entries that match
-    keys = dictionary.keys()
-    return_value = ""
-    for key in keys:
-        for entry in entries:
-            print key, entry.lower()
-            if entry.lower() in key.lower():
-                return_value += entry + "^"
-    return return_value
 
 
 def check_for_plain_style(style):
@@ -502,22 +531,16 @@ def remove_bracketed_enclosures(code):
     return return_value
 
 
-def filter_suggestions(word, separated_string, filter_out):
+def filter_suggestions(token, suggestions):
 
-    # filter a string of suggestions separated by ^
+    # filter a list of suggestions
     # remove words with in the filter out string
-    tokens = separated_string.split("^")
-    return_value = ""
-    if filter_out is not "":
-        for token in tokens:
-            if filter_out not in token:
-                if word.lower() in token.lower():
-                    return_value += token + "^"
-    else:
-        for token in tokens:
-            if word.lower() in token.lower():
-                return_value += token + "^"
-    return_value.strip("^")
+    return_value = []
+    if suggestions is None:
+        return return_value
+    for word in suggestions:
+        if token.lower() in word.lower():
+            return_value.append(word)
     return return_value
 
 
@@ -551,14 +574,14 @@ def find_object_reference(line, object_list):
     the_object = tokens[-1].split(".")[0]
     if the_object:
         for o in object_list:
-            if o.definition == the_object:
+            if o.name == the_object:
                 return o
     return None
 
 
 def find_object(lines, object_list):
 
-    # return the present classes of the object we're editing, else return none
+    # return the present mixins of the object we're editing, else return none
 
     # first - if we're on top of an object reference (ex: object.property) return those classes instead of the
     # master reference here
@@ -567,7 +590,7 @@ def find_object(lines, object_list):
         object_reference = find_object_reference(top_line, object_list)
         if object_reference:
             return_value = []
-            for c in object_reference.classes:
+            for c in object_reference.inherits:
                 return_value.append(c)
             if len(return_value) > 0:
                 return return_value
@@ -592,19 +615,34 @@ def find_object(lines, object_list):
     return None
 
 
-def in_enclosure(lines, *args):
+def prep_member(member):
+
+    # prepare member passed above for help system comparison
+    string = member.strip()
+    return_value = ''
+    if 'objFor' in string:
+        return string
+    for c in string:
+        if c is '(':
+            break;
+        return_value += c
+    return return_value
+
+
+def in_enclosure(lines):
 
     # check if we're in enclosures marked by each token in "args"
     # verify return value with syntax: if "token" in "return_value": then do this
-    check_against = []
+    tokens = action_token, check_token, verify_token, "dobjFor", "iobjFor"
     return_value = ""
-    for arg in args:
-        check_against.append(re.compile(arg + "\s*\("))
     for line in lines:
-        for c in check_against:
-            check = c.search(line)
-            if check:
-                return_value = return_value + c.pattern + " "
+        for token in tokens:
+            if token in line:
+                if token is "dobjFor" or token is "iobjFor":
+                    if "asDobjFor" not in line and "asIobjFor" not in line:
+                        return_value = return_value + token + " "
+                else:
+                    return_value = return_value + token + " "
     return return_value
 
 __author__ = 'dj'

@@ -1,5 +1,0 @@
-cannotTakeMsg
-The message to display to explain why this object can't be taken.
-
-dobjFor(Take)
-Respond to an attempt to TAKE by ruling it out at the check stage.

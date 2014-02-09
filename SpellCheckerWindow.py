@@ -49,22 +49,22 @@ class SpellCheckWindow(wx.Frame):
 
         # check the next word/phrase in list of errors
         # with no errors, close window
-        print len(self.errors)
         if len(self.errors) < 1:
             self.Destroy()
 
         # otherwise, check for next error in list
-        self.error = self.errors.pop(0)
-        error_location = self.editor.Text.find(self.error.string)
-        if error_location < 0:
-            self.check_next_word()
-        self.editor.GotoPos(error_location)
-        self.editor.SetCurrentPos(error_location)
-        self.editor.SetAnchor(error_location + len(self.error.string))
-        self.SetTitle(self.title_prefix + self.error.string)
-        self.suggestions_ctrl.DeleteAllItems()
-        for suggestion in self.error.suggestions:
-            self.suggestions_ctrl.InsertStringItem(0, suggestion)
+        else:
+            self.error = self.errors.pop(0)
+            error_location = self.editor.Text.find(self.error.string)
+            if error_location < 0:
+                self.check_next_word()
+            self.editor.GotoPos(error_location)
+            self.editor.SetCurrentPos(error_location)
+            self.editor.SetAnchor(error_location + len(self.error.string))
+            self.SetTitle(self.title_prefix + self.error.string)
+            self.suggestions_ctrl.DeleteAllItems()
+            for suggestion in self.error.suggestions:
+                self.suggestions_ctrl.InsertStringItem(0, suggestion)
 
     def replace(self, old_text, new_text):
 
