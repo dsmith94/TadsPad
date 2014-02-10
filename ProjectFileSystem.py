@@ -161,7 +161,6 @@ def new_project(the_project):
     the_project.name = the_project.name
     the_project.filename = the_project.name + ".t3m"
     the_project.path = path_string
-    print the_project.library
     shutil.copyfile("ignore.tmp", os.path.join(path_string, "ignore.txt"))
     try:
         start_tmp = open("./start.tmp", 'r')

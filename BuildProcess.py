@@ -15,7 +15,7 @@ class CompileGame(Thread):
         Thread.__init__(self)
 
 
-def run(the_thread, the_project, tads3path, terp):
+def run(the_thread, the_project, terp, tads3path, script=""):
 
     # compile game for playing
     MessageSystem.show_message("Building " + the_project.name + "...")
@@ -27,11 +27,15 @@ def run(the_thread, the_project, tads3path, terp):
                                        stderr=subprocess.STDOUT)
     output = compile_process.communicate()[0]
     exit_code = compile_process.returncode
+    if script != "":
+        input_file = open(os.path.join(the_project.path, "input.txt"), mode='w')
+        input_file.write(script)
+        input_file.close()
+        options = options + "-i \"" + os.path.join(the_project.path, "input.txt\" ")
     if exit_code == 0:
         wx.CallAfter(MessageSystem.show_message, "Compile complete")
-        wx.CallAfter(subprocess.Popen, interpreter + options + "\"" + os.path.join(the_project.path, the_project.name +
-                                                                                   ".t3") + "\"", shell=True,
-                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        wx.CallAfter(subprocess.Popen, interpreter + options + "\"" + os.path.join(the_project.path, the_project.name + ".t3")
+                     + "\"", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     else:
         wx.CallAfter(MessageSystem.show_errors, output)
 

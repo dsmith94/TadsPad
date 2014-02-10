@@ -166,7 +166,7 @@ class MainWindow(wx.Frame):
         # compile and run current tads story
         # to do this, make a new thread
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project, self.preferences["tadspath"], self.preferences["terp"])
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"])
 
     def load_project(self, event):
 
@@ -182,6 +182,7 @@ class MainWindow(wx.Frame):
             self.project_browser.update_files()
             self.object_browser.rebuild_object_catalog()
             self.notebook.load_classes(self.project)
+            self.Title = "TadsPad - " + self.project.name
 
     def save_page(self, event):
 
@@ -286,6 +287,8 @@ class MainWindow(wx.Frame):
 
         # load classes data from tads project directory
         self.notebook.load_classes(self.project)
+        self.Title = "TadsPad - " + self.project.name
+
 
     def spell_check(self, event):
 
@@ -295,7 +298,7 @@ class MainWindow(wx.Frame):
     def load_transcript_view(self, event):
 
         # load transcript viewer with commands from last play-through
-        transcript_viewer = TranscriptView.TranscriptViewWindow(self.project)
+        transcript_viewer = TranscriptView.TranscriptViewWindow(self.project, self.preferences["terp"], self.preferences["tadspath"])
         transcript_viewer.Show()
 
 

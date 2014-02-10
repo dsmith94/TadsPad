@@ -5,11 +5,11 @@
 
 import wx
 import os
-import subprocess
+import BuildProcess
 
 
 class TranscriptViewWindow(wx.Frame):
-    def __init__(self, project):
+    def __init__(self, project, terp, tads3path):
         wx.Frame.__init__(self, None, title="Transcript of Last Session")
 
         r = wx.Display().GetGeometry()
@@ -18,6 +18,8 @@ class TranscriptViewWindow(wx.Frame):
         transcript_ctrl.InsertColumn(0, "Command List", width=r.Width / 4)
         transcript_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.command_activated)
         index = 0
+        self.terp = terp
+        self.tads3path = tads3path
         self.transcript = process_transcript(project.path)
         self.project = project
         for command in self.transcript:
@@ -38,17 +40,10 @@ class TranscriptViewWindow(wx.Frame):
             if index == index_max:
                 break
             index += 1
-        if script != "":
-            input_file = open(os.path.join(self.project.path, "input.txt"), mode='w')
-            input_file.write(script)
-            input_file.close()
-            options = " -i \"" + os.path.join(self.project.path, "input.txt\" ") + " -o \"" + os.path.join(self.project.path, "transcript.txt\" ")
-            interpreter = "\"C:/Program Files/TADS 3/htmlt3.exe\" "
-            subprocess.Popen(interpreter + options + "\"" + os.path.join(self.project.path, self.project.name +
-                                                                         ".t3") + "\"", shell=True,
-                                                                         stdout=subprocess.PIPE,
-                                                                         stderr=subprocess.STDOUT)
-            self.Close()
+        process = BuildProcess.CompileGame
+        BuildProcess.run(process, self.project, self.terp, self.tads3path, script)
+
+        self.Close()
 
 
 def process_transcript(project_path):
