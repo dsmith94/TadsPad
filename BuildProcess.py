@@ -15,14 +15,13 @@ class CompileGame(Thread):
         Thread.__init__(self)
 
 
-def run(the_thread, the_project):
+def run(the_thread, the_project, tads3path, terp):
 
     # compile game for playing
     MessageSystem.show_message("Building " + the_project.name + "...")
     ProjectFileSystem.write_makefile(the_project.name, the_project.files)
-    tads3path = "\"C:/Program Files/TADS 3/t3make.exe\" "
     options = " -o \"" + os.path.join(the_project.path, "transcript.txt\" ")
-    interpreter = "\"C:/Program Files/TADS 3/htmlt3.exe\" "
+    interpreter = terp
     project_to_compile = "-f \"" + the_project.path + "/" + the_project.filename + "\""
     compile_process = subprocess.Popen(tads3path + project_to_compile, shell=True, stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT)

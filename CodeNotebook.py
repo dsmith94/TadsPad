@@ -8,8 +8,9 @@ import wx.lib.agw.aui as Aui
 import Editor
 import MessageSystem
 import os.path
-import glob
 import TClass
+import ProjectFileSystem
+import pickle
 
 
 class Notebook(Aui.AuiNotebook):
@@ -23,22 +24,48 @@ class Notebook(Aui.AuiNotebook):
         self.default_style = Aui.AUI_NB_DEFAULT_STYLE | Aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
         self.SetWindowStyleFlag(self.default_style)
         self.SetArtProvider(Aui.ChromeTabArt())     # change tab art to be cross-platform friendly
-        self.project_name = "unnamed project"
-        self.classes = parse_library()
+        # self.project_name = "unnamed project"
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
 
-        # build class cache on load
-        parse_library()
-
-        # the objects!
+        # the objects and classes
         self.objects = list()
+        self.classes = []
 
     def __getitem__(self, index):
         if index < self.GetPageCount():
             return self.GetPage(index)
         else:
             raise IndexError
+
+    def load_classes(self, project):
+
+        # load adv3lite worldmodel classes from file
+        root = ProjectFileSystem.get_project_root()
+        path = os.path.join(root, project.name)
+        if os.path.exists(os.path.join(path, "classes.dat")):
+
+            # it exists! load file so we get previously used class resources
+            try:
+                the_file = open(os.path.join(path, "classes.dat"), 'rb')
+                self.classes = pickle.load(the_file)
+                the_file.close()
+            except IOError:
+                MessageSystem.error("Could not read file: " + path, path + " corrupted")
+            return
+
+        # no previous classes: load them
+        self.classes = parse_library()
+
+        # now that the heavy lifting is done, save the classes to file
+        if not os.path.exists(path):
+            os.makedirs(path)
+        try:
+            output = open(os.path.join(path, "classes.dat"), 'wb')
+            pickle.dump(self.classes, output)
+            output.close()
+        except IOError, e:
+            MessageSystem.error("Could not save file: " + e.filename, "File write error")
 
     def close_all(self):
 
@@ -238,17 +265,25 @@ def parse_library():
     lines = sources_raw.split('\n')
     source_pattern = re.compile("source:\s(\w*)")
     sources = []
+    number_of_sources = 0
+    sources_index = 0
     for line in lines:
         match = source_pattern.match(line)
         if match:
             sources.append(match.group(1))
+            number_of_sources += 1
+
     classes = []
+    load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
     for source in sources:
         code_file = open(os.path.join(path_string, source + ".t"), 'rU')
+        load_dlg.Update(sources_index, source + ".t")
         code = code_file.read()
         code_file.close()
         classes.extend(TClass.extract(code))
+        sources_index += 1
     TClass.cross_reference(classes)
+    load_dlg.Destroy()
     return classes
 
 

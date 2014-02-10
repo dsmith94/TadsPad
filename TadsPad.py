@@ -30,6 +30,14 @@ class MainWindow(wx.Frame):
         # user preferences - blank by default, until we load something in them
         self.preferences = {}
 
+        # tads 3 path, varies according to platform
+        if sys.platform == 'win32':
+            self.preferences["tadspath"] = "\"C:/Program Files/TADS 3/t3make.exe\" "
+            self.preferences["terp"] = "\"C:/Program Files/TADS 3/htmlt3.exe\" "
+        else:
+            self.preferences["tadspath"] = "t3make "
+            self.preferences["terp"] = "frob "
+
         # build main user interface
         BuildMainUi.init(self)
         self.Bind(wx.EVT_CLOSE, self.on_quit)
@@ -109,8 +117,10 @@ class MainWindow(wx.Frame):
         # load program preferences from file
         # chief here is the last opened project
         ProjectFileSystem.load_project(self.preferences["last project"], self.project)
+        self.mgr.LoadPerspective(self.preferences["layout"])
         self.object_browser.rebuild_object_catalog()
         self.project_browser.update_files()
+        self.notebook.load_classes(self.project)
 
     def first_time_load(self):
 
@@ -122,6 +132,7 @@ class MainWindow(wx.Frame):
 
         # save preferences to file before quit
         path = os.path.dirname(self.config_path)
+        self.preferences["layout"] = self.mgr.SavePerspective()
         if not os.path.exists(path):
             os.makedirs(path)
         self.preferences.update({"last project": os.path.join(self.project.path, self.project.filename)})
@@ -152,7 +163,7 @@ class MainWindow(wx.Frame):
         # compile and run current tads story
         # to do this, make a new thread
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project)
+        BuildProcess.run(process, self.project, self.preferences["tadspath"], self.preferences["terp"])
 
     def load_project(self, event):
 
@@ -163,10 +174,11 @@ class MainWindow(wx.Frame):
         if loadFileDialog.ShowModal() == wx.ID_CANCEL:
             return
         else:
+            self.notebook.close_all()
             ProjectFileSystem.load_project(loadFileDialog.Path, self.project)
             self.project_browser.update_files()
             self.object_browser.rebuild_object_catalog()
-            self.notebook.close_all()
+            self.notebook.load_classes(self.project)
 
     def save_page(self, event):
 
@@ -203,11 +215,32 @@ class MainWindow(wx.Frame):
 
         # display text in message pane
         self.message_pane.show_message(text)
+        self.message_book.Update()
 
     def show_errors(self, text):
 
         # display errors text in message pane
-        self.message_pane.show_output(text)
+        self.message_book.SetSelection(1)
+        self.output_pane.show_output(text)
+        self.message_book.Update()
+
+    def toggle_messages(self, event):
+
+        # toggle messages pane
+        if self.mgr.GetPane('messages').IsShown():
+            self.mgr.GetPane('messages').Hide()
+        else:
+            self.mgr.GetPane('messages').Show()
+        self.mgr.Update()
+
+    def toggle_objects(self, event):
+
+        # toggle messages pane
+        if self.mgr.GetPane('project').IsShown():
+            self.mgr.GetPane('project').Hide()
+        else:
+            self.mgr.GetPane('project').Show()
+        self.mgr.Update()
 
     def new_project_window(self, insist_mode):
 
@@ -228,6 +261,7 @@ class MainWindow(wx.Frame):
         if get_name != "":
 
             # we have a new project, let's build a directory for it
+            self.notebook.close_all()
             self.project.title = get_title
             self.project.author = get_author
             ProjectFileSystem.new_project(get_name, self.project)
@@ -239,6 +273,9 @@ class MainWindow(wx.Frame):
                 self.Close(0)
 
         self.project_browser.update_files()
+
+        # load classes data from tads project directory
+        self.notebook.load_classes(self.project)
 
     def spell_check(self, event):
 

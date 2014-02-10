@@ -33,6 +33,7 @@ class ColorSchemer:
 
         ## constructor for ColorSchemer, set default colors and fonts
         font = wx.Font(12, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        font.SetNoAntiAliasing(False)
         self.face = font.GetFaceName()
         self.size = font.GetPointSize()
         self.color_list = dict()
@@ -167,10 +168,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # for when we insert anything ending in the word "Msg" add single quotes
         if selection[-3:] == "Msg":
             self.InsertText(position, " = \'\'")
-
-        # adding a new room? insert ;
-        if selection == "Room":
-            self.InsertText(position, self.insert_indent(1) + "\n;")
 
         # regions
         if selection == "regions":
@@ -313,7 +310,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if inherits:
             check_on_line = self.get_line_suggestions(lines[-2], inherits)
             if check_on_line is not None:
-                return check_on_line, None
+                return check_on_line
             for i in inherits:
                 for c in self.classes:
                     if i == c.name:
@@ -322,7 +319,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         else:
             # we're not editing an object, so provide the verb creation options if no indent is set
             if self.GetLineIndentation(self.GetCurrentLine()) == 0:
-                return self.handle_not_in_object(), ""
+                return self.handle_not_in_object()
 
         # apply object listing first
         for o in self.notebook.objects:

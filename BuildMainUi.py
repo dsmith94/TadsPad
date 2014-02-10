@@ -27,13 +27,16 @@ def create_message_pane(top_window):
     # show message pane
     r = wx.Display().GetGeometry()
     top_window.message_pane = MessagePane.MessagePane(top_window)
-    the_pane = aui.AuiPaneInfo()
+    top_window.output_pane = MessagePane.OutputPane(top_window)
+    top_window.message_book.AddPage(top_window.message_pane, "Context Help")
+    top_window.message_book.AddPage(top_window.output_pane, "Compile Output")
+    the_pane = aui.AuiPaneInfo().PaneBorder(False).CloseButton(False).Name("messages")
     the_pane.MinSize(r.Width, r.Height / 6)
     the_pane.Bottom()
-    the_pane.Caption("Message Pane")
-    top_window.mgr.AddPane(top_window.message_pane, the_pane)
+    top_window.mgr.AddPane(top_window.message_book, the_pane)
     top_window.mgr.Update()
     top_window.message_pane.show_message("")
+    top_window.message_book.Update()
 
 
 def create_object_browser(top_window):
@@ -44,7 +47,7 @@ def create_object_browser(top_window):
     local_panel.SetSize((r.Width / 5, r.Width / 5))
     top_window.object_browser = ObjectBrowser.ObjectBrowser(top_window.notebook, parent=local_panel)
     top_window.project_browser = ProjectBrowser.ProjectBrowser(top_window.object_browser, parent=local_panel)
-    the_pane = aui.AuiPaneInfo()
+    the_pane = aui.AuiPaneInfo().CloseButton(False).Name("project")
     the_pane.MinSize((r.Width / 5, r.Width / 5))
     the_pane.RightSnappable()
     the_pane.Right()
@@ -82,8 +85,6 @@ def create_menu_system(top_window):
     load_project_item = project_menu.Append(wx.ID_ANY, 'Load Project', 'Load Previously Edited Project...')
     file_menu.AppendMenu(wx.ID_ANY, "Project", project_menu)
     file_menu.AppendSeparator()
-    play_project_item = file_menu.Append(wx.ID_ANY, 'Play\tF5', 'Play Current Project')
-    file_menu.AppendSeparator()
     exit_program_item = file_menu.Append(wx.ID_EXIT, 'Exit', 'Exit TadsPad')
     top_window.Bind(wx.EVT_MENU, top_window.on_quit, exit_program_item)
     top_window.Bind(wx.EVT_MENU, top_window.save_page, save_item)
@@ -92,7 +93,6 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.new_page, add_empty_item)
     top_window.Bind(wx.EVT_MENU, top_window.new_project, new_project_item)
     top_window.Bind(wx.EVT_MENU, top_window.load_project, load_project_item)
-    top_window.Bind(wx.EVT_MENU, top_window.play_project, play_project_item)
 
     # edit menu
     edit_menu = wx.Menu()
@@ -115,8 +115,10 @@ def create_menu_system(top_window):
 
     # view menu
     view_menu = wx.Menu()
-    debug_pane_item = view_menu.Append(wx.ID_ANY, 'Message Pane', 'Toggle Message Pane')
-    object_pane_item = view_menu.Append(wx.ID_ANY, 'Object Pane', 'Toggle Object Pane')
+    debug_pane_item = view_menu.Append(wx.ID_ANY, 'Toggle Message Pane\tF3', 'Hide/Show Messages')
+    object_pane_item = view_menu.Append(wx.ID_ANY, 'Toggle Object Pane\tF4', 'Hide/Show Object Pane')
+    top_window.Bind(wx.EVT_MENU, top_window.toggle_messages, debug_pane_item)
+    top_window.Bind(wx.EVT_MENU, top_window.toggle_objects, object_pane_item)
 
     # tools menu
     tools_menu = wx.Menu()
@@ -124,6 +126,9 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.load_transcript_view, view_transcript_item)
     spell_checker_item = tools_menu.Append(wx.ID_ANY, 'Spell Check', 'Check Spelling in All Game Strings')
     top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_checker_item)
+    file_menu.AppendSeparator()
+    play_project_item = file_menu.Append(wx.ID_ANY, 'Play\tF5', 'Play Current Project')
+    top_window.Bind(wx.EVT_MENU, top_window.play_project, play_project_item)
 
     # help menu
     help_menu = wx.Menu()
@@ -152,5 +157,6 @@ def create_notebook(top_window):
     top_window.mgr = aui.AuiManager()
     top_window.mgr.SetManagedWindow(top_window)
     top_window.notebook = CodeNotebook.Notebook(top_window)
+    top_window.message_book = aui.AuiNotebook(top_window, agwStyle=aui.AUI_NB_BOTTOM)
     top_window.mgr.AddPane(top_window.notebook, aui.AuiPaneInfo().Name("notebook_code").CenterPane().PaneBorder(False))
     top_window.mgr.Update()
