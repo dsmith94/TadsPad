@@ -25,6 +25,7 @@ class TadsProject():
         self.desc = ""
         self.email = ""
         self.path = ""
+        self.library = ""
         self.files = []
         self.files.append("start.t")
 
@@ -49,12 +50,16 @@ class NewProjectWindow(wx.Dialog):
         lbl_game_name = wx.StaticText(self, label="New Project Name   ")
         lbl_game_title = wx.StaticText(self, label="Game Title   ")
         lbl_author = wx.StaticText(self, label="Author   ")
+        self.lite = wx.RadioButton(self, -1, 'adv3Lite', style=wx.RB_GROUP)
+        self.liter = wx.RadioButton(self, -1, 'adv3Liter')
         box_for_text.Add(lbl_game_name)
         box_for_text.Add(self.game_name)
         box_for_text.Add(lbl_game_title)
         box_for_text.Add(self.game_title)
         box_for_text.Add(lbl_author)
         box_for_text.Add(self.author)
+        box_for_text.Add(self.lite)
+        box_for_text.Add(self.liter)
         ok_button = wx.Button(self, wx.ID_OK, "&OK")
         cancel_button = wx.Button(self, wx.ID_CANCEL, "&Cancel")
         box_for_buttons.Add(ok_button, 0)
@@ -89,6 +94,16 @@ def load_project(file_name, the_project):
 
         # describe to parser what a source definition looks like
         sources = re.compile("-source ([\s|\"*|a-zA-Z]*)")
+        library = re.compile("-lib \.\./extensions/adv3Lite/(\w*)")
+
+        # get library used
+        match = library.findall(file_text)
+        if match:
+            # found library, use it
+            the_project.library = match[0]
+        else:
+            # no match found, default is adv3lite
+            the_project.library = "adv3lite"
 
         # now get list of sources
         the_project.files[:] = []
@@ -113,19 +128,20 @@ def generate_ifid(author_and_title_string):
     return s
 
 
-def write_makefile(name_of_project, list_of_files):
+def write_makefile(project):
 
     # write makefile, for compilation process
-    path_string = get_project_root() + name_of_project + "/"
+    path_string = get_project_root() + project.name + "/"
     try:
         f = open("./makefile.tmp", 'r')
         file_text = f.read()
-        file_text = file_text.replace('$NAME$', name_of_project)
+        file_text = file_text.replace('$NAME$', project.name)
         files = ""
-        for file_name in list_of_files:
+        for file_name in project.files:
             files = files + "-source " + file_name[:-2] + "\n"
         file_text = file_text.replace('$SOURCE$', files)
-        finished = open(path_string + name_of_project + ".t3m", 'w')
+        file_text = file_text.replace('$LIBRARY$', project.library)
+        finished = open(path_string + project.name + ".t3m", 'w')
         finished.write("%s" % file_text)
         f.close()
         finished.close()
@@ -134,17 +150,18 @@ def write_makefile(name_of_project, list_of_files):
                             "Failed to create makefile")
 
 
-def new_project(name_of_project, the_project):
+def new_project(the_project):
 
     # create new project
     path_string = get_project_root()
-    os.makedirs(os.path.join(path_string, name_of_project))
-    os.makedirs(os.path.join(path_string, name_of_project, "obj"))
-    path_string = os.path.join(path_string, name_of_project)
-    write_makefile(name_of_project, the_project.files)
-    the_project.name = name_of_project
-    the_project.filename = name_of_project + ".t3m"
+    os.makedirs(os.path.join(path_string, the_project.name))
+    os.makedirs(os.path.join(path_string, the_project.name, "obj"))
+    path_string = os.path.join(path_string, the_project.name)
+    write_makefile(the_project)
+    the_project.name = the_project.name
+    the_project.filename = the_project.name + ".t3m"
     the_project.path = path_string
+    print the_project.library
     shutil.copyfile("ignore.tmp", os.path.join(path_string, "ignore.txt"))
     try:
         start_tmp = open("./start.tmp", 'r')

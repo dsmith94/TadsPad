@@ -116,11 +116,14 @@ class MainWindow(wx.Frame):
 
         # load program preferences from file
         # chief here is the last opened project
-        ProjectFileSystem.load_project(self.preferences["last project"], self.project)
-        self.mgr.LoadPerspective(self.preferences["layout"])
-        self.object_browser.rebuild_object_catalog()
-        self.project_browser.update_files()
-        self.notebook.load_classes(self.project)
+        try:
+            ProjectFileSystem.load_project(self.preferences["last project"], self.project)
+            self.mgr.LoadPerspective(self.preferences["layout"])
+            self.object_browser.rebuild_object_catalog()
+            self.project_browser.update_files()
+            self.notebook.load_classes(self.project)
+        except:
+            self.insist_on_new_project()
 
     def first_time_load(self):
 
@@ -142,7 +145,7 @@ class MainWindow(wx.Frame):
             output.close()
         except IOError, e:
             MessageSystem.error("Could not save preferences: " + e.filename, "File write error")
-        ProjectFileSystem.write_makefile(self.project.name, self.project.files)
+        ProjectFileSystem.write_makefile(self.project)
 
     def on_quit(self, event):
         unsaved_pages = self.notebook.get_unsaved_pages()
@@ -253,24 +256,31 @@ class MainWindow(wx.Frame):
         get_name = ""
         get_title = ""
         get_author = ""
+        get_library = ""
         if result == wx.ID_OK:
             get_name = ProjectFileSystem.remove_disallowed_filename_chars(dlg.game_name.GetValue())
             get_title = dlg.game_title.GetValue()
             get_author = dlg.author.GetValue()
+            if dlg.lite.GetValue() == True:
+                get_library = "adv3Lite"
+            else:
+                get_library = "adv3Liter"
         dlg.Destroy()
         if get_name != "":
 
             # we have a new project, let's build a directory for it
             self.notebook.close_all()
             self.project.title = get_title
+            self.project.name = get_name
             self.project.author = get_author
-            ProjectFileSystem.new_project(get_name, self.project)
+            self.project.library = get_library
+            ProjectFileSystem.new_project(self.project)
             self.notebook.load_page(self.project.path, "start.t", self.project.title)
 
         else:
             if insist_mode:
                 MessageSystem.error("No project name given, TadsPad will now exit", "Goodbye!!")
-                self.Close(0)
+                self.Destroy()
 
         self.project_browser.update_files()
 

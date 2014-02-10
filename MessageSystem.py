@@ -21,17 +21,10 @@ class MainWindow(object):
         return cls.instance
 
 
-def library_reference(parent):
+def bookshelf_system(parent):
 
-    # use web browser to display library reference
-    url = "https://dl.dropboxusercontent.com/u/58348218/adv3Lite/docs/libref/index.html"
-    webbrowser.open(url, new=newBrowserTab)
-
-
-def tutorial_system(parent):
-
-    # use web browser to display TADS 3 tutorial
-    url = "https://dl.dropboxusercontent.com/u/58348218/adv3Lite/docs/tutorial/index.htm"
+    # use web browser to display TADS 3 adv3lite bookshelf
+    url = "https://dl.dropboxusercontent.com/u/58348218/adv3Lite/docs/index.htm"
     webbrowser.open(url, new=newBrowserTab)
 
 

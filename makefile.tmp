@@ -16,9 +16,8 @@
 -v
 -w1     
 -Fy obj -Fo obj
--Os strings.txt
 -lib system
--lib ../extensions/adv3Lite/adv3Lite
+-lib ../extensions/adv3Lite/$LIBRARY$
 
 
 ##sources

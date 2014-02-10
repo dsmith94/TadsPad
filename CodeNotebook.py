@@ -55,7 +55,7 @@ class Notebook(Aui.AuiNotebook):
             return
 
         # no previous classes: load them
-        self.classes = parse_library()
+        self.classes = parse_library(project.library)
 
         # now that the heavy lifting is done, save the classes to file
         if not os.path.exists(path):
@@ -255,11 +255,11 @@ class Notebook(Aui.AuiNotebook):
             MessageSystem.error("Cannot spell-check without a valid TADS file open. ", "Spell check fail")
 
 
-def parse_library():
+def parse_library(library):
 
     # parse all classes/members in the presently selected world-model library
     path_string = os.path.expanduser('~/Documents/TADS 3/extensions/adv3lite')
-    sources_file = open(os.path.join(path_string, "adv3lite.tl"), 'rU')
+    sources_file = open(os.path.join(path_string, library + ".tl"), 'rU')
     sources_raw = sources_file.read()
     sources_file.close()
     lines = sources_raw.split('\n')

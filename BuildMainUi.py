@@ -103,15 +103,12 @@ def create_menu_system(top_window):
     copy_item = edit_menu.Append(wx.ID_COPY, 'Copy\tCtrl+C', 'Copy')
     paste_item = edit_menu.Append(wx.ID_PASTE, 'Paste\tCtrl+V', 'Paste')
     edit_menu.AppendSeparator()
-    spell_item = edit_menu.Append(wx.ID_ANY, 'Spell Check\tF7', 'After the Deadline Spell Check')
-    edit_menu.AppendSeparator()
     preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Preferences', 'Preferences')
     top_window.Bind(wx.EVT_MENU, top_window.undo, undo_item)
     top_window.Bind(wx.EVT_MENU, top_window.redo, redo_item)
     top_window.Bind(wx.EVT_MENU, top_window.cut, cut_item)
     top_window.Bind(wx.EVT_MENU, top_window.copy, copy_item)
     top_window.Bind(wx.EVT_MENU, top_window.paste, paste_item)
-    top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_item)
 
     # view menu
     view_menu = wx.Menu()
@@ -122,22 +119,20 @@ def create_menu_system(top_window):
 
     # tools menu
     tools_menu = wx.Menu()
-    view_transcript_item = tools_menu.Append(wx.ID_ANY, 'View Transcript', 'Command Transcript View Window')
+    view_transcript_item = tools_menu.Append(wx.ID_ANY, 'View Transcript\tF6', 'Command Transcript View Window')
     top_window.Bind(wx.EVT_MENU, top_window.load_transcript_view, view_transcript_item)
-    spell_checker_item = tools_menu.Append(wx.ID_ANY, 'Spell Check', 'Check Spelling in All Game Strings')
-    top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_checker_item)
-    file_menu.AppendSeparator()
-    play_project_item = file_menu.Append(wx.ID_ANY, 'Play\tF5', 'Play Current Project')
+    spell_item = tools_menu.Append(wx.ID_ANY, 'Spell Check\tF7', 'After the Deadline Spell Check')
+    top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_item)
+    tools_menu.AppendSeparator()
+    play_project_item = tools_menu.Append(wx.ID_ANY, 'Play\tF5', 'Play Current Project')
     top_window.Bind(wx.EVT_MENU, top_window.play_project, play_project_item)
 
     # help menu
     help_menu = wx.Menu()
-    tutorial_item = help_menu.Append(wx.ID_HELP_CONTENTS, 'Tutorial', 'Tutorial')
-    library_item = help_menu.Append(wx.ID_HELP_INDEX, 'Library Reference', 'Library Reference')
+    bookshelf_item = help_menu.Append(wx.ID_HELP_CONTENTS, 'Adv3Lite Bookshelf\tF1', 'Complete TADS Adv3Lite Documentation Set')
     help_menu.AppendSeparator()
     about_item = help_menu.Append(wx.ID_ABOUT, 'About TadsPad...', 'About TadsPad...')
-    top_window.Bind(wx.EVT_MENU, MessageSystem.library_reference, library_item)
-    top_window.Bind(wx.EVT_MENU, MessageSystem.tutorial_system, tutorial_item)
+    top_window.Bind(wx.EVT_MENU, MessageSystem.bookshelf_system, bookshelf_item)
     top_window.Bind(wx.EVT_MENU, MessageSystem.about_box, about_item)
 
     # finalize finished menu
