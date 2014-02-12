@@ -42,6 +42,7 @@ class Notebook(Aui.AuiNotebook):
 
         # load adv3lite worldmodel classes from file
         root = ProjectFileSystem.get_project_root()
+	print (root)
         path = os.path.join(root, project.name)
         if os.path.exists(os.path.join(path, "classes.dat")):
 
@@ -258,7 +259,8 @@ class Notebook(Aui.AuiNotebook):
 def parse_library(library):
 
     # parse all classes/members in the presently selected world-model library
-    path_string = os.path.expanduser('~/Documents/TADS 3/extensions/adv3lite')
+    path_string = os.path.expanduser('~/Documents/TADS 3/extensions/adv3Lite')
+    print (path_string)
     sources_file = open(os.path.join(path_string, library + ".tl"), 'rU')
     sources_raw = sources_file.read()
     sources_file.close()

@@ -103,7 +103,7 @@ def load_project(file_name, the_project):
             the_project.library = match[0]
         else:
             # no match found, default is adv3lite
-            the_project.library = "adv3lite"
+            the_project.library = "adv3Lite"
 
         # now get list of sources
         the_project.files[:] = []
@@ -173,7 +173,7 @@ def new_project(the_project):
         start_tmp_text = start_tmp_text.replace('$FILENAME$', 'start.t')
         start_tmp_text = start_tmp_text.replace('$HTMLDESC$', the_project.htmldesc)
         start_tmp_text = start_tmp_text.replace('$EMAIL$', the_project.email)
-        start_t = open(path_string + "/start.t", 'w')
+        start_t = open(os.path.join(path_string, "start.t"), 'w')
         start_t.write(start_tmp_text)
         start_t.close()
 

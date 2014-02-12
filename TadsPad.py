@@ -23,9 +23,9 @@ class MainWindow(wx.Frame):
         # find config data
         self.config_path = ""
         if sys.platform == 'win32':
-            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad/prefs.conf")
+            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad", "prefs.conf")
         else:
-            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad/prefs.conf")
+            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.conf")
 
         # user preferences - blank by default, until we load something in them
         self.preferences = {}
@@ -103,12 +103,12 @@ class MainWindow(wx.Frame):
                 the_file = open(self.config_path, 'rb')
                 self.preferences = pickle.load(the_file)
                 the_file.close()
-                self.load_preferences()
+		self.load_preferences()
             except IOError:
                 MessageSystem.error("Could not read file: " + self.config_path, self.config_path + " corrupted")
 
             return
-
+	
         # no pref.conf, it's our first time loading tadspad
         self.first_time_load()
 
