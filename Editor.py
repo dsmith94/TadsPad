@@ -461,6 +461,17 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         return_text = return_text.replace("[&escape &goes &here]", "\'")
         return return_text
 
+    def search_for(self, text):
+
+        # select text from anchor
+        maxPos = len(self.Text)
+        textLength = len(text)
+        minPos = self.GetAnchor()
+        location = self.FindText(minPos, maxPos, text)
+        self.GotoPos(location)
+        self.SetAnchor(location)
+        self.SetCurrentPos(location + textLength)
+
     def spellcheck(self, project):
 
         # pull strings from page and send to atd spellcheck service

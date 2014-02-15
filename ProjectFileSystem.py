@@ -28,6 +28,31 @@ class TadsProject():
         self.library = ""
         self.files = []
         self.files.append("start.t")
+        self.phrases = []   # special tags used in making new project files
+
+    def new_file(self, name, dest):
+
+        # create a new file for project, with tokens changed to match current project config
+        # use tokens from phrases string
+        try:
+            temp_file = open("./" + name + ".tmp", 'rU')
+            text = temp_file.read()
+            temp_file.close()
+        except IOError, e:
+            MessageSystem.error("Could not retrieve data from file: " + e.filename,
+                                "File Read Failure")
+        else:
+            for pair in self.phrases:
+                text = text.replace(pair[0], pair[1])
+            text = text.replace("$FILENAME$", dest)
+            text = text.replace("$TITLE$", self.name)
+            try:
+                final_file = open(os.path.join(self.path, dest), 'w')
+                final_file.write(text)
+                final_file.close()
+            except IOError, e:
+                MessageSystem.error("Could not write file: " + e.filename,
+                                    "File Write Failure")
 
 
 def remove_disallowed_filename_chars(filename):
@@ -158,28 +183,13 @@ def new_project(the_project):
     os.makedirs(os.path.join(path_string, the_project.name, "obj"))
     path_string = os.path.join(path_string, the_project.name)
     write_makefile(the_project)
-    the_project.name = the_project.name
     the_project.filename = the_project.name + ".t3m"
     the_project.path = path_string
-    shutil.copyfile("ignore.tmp", os.path.join(path_string, "ignore.txt"))
-    try:
-        start_tmp = open("./start.tmp", 'r')
-        start_tmp_text = start_tmp.read()
-        start_tmp.close()
-        start_tmp_text = start_tmp_text.replace('$TITLE$', the_project.title)
-        start_tmp_text = start_tmp_text.replace('$AUTHOR$', the_project.author)
-        start_tmp_text = start_tmp_text.replace('$IFID$', generate_ifid(the_project.author + the_project.title))
-        start_tmp_text = start_tmp_text.replace('$DESC$', the_project.desc)
-        start_tmp_text = start_tmp_text.replace('$FILENAME$', 'start.t')
-        start_tmp_text = start_tmp_text.replace('$HTMLDESC$', the_project.htmldesc)
-        start_tmp_text = start_tmp_text.replace('$EMAIL$', the_project.email)
-        start_t = open(os.path.join(path_string, "start.t"), 'w')
-        start_t.write(start_tmp_text)
-        start_t.close()
-
-    except IOError, e:
-        MessageSystem.error("Could not retrieve data from file: start.tmp. Error:" + e.filename,
-                            "Failed to create project")
-
+    the_project.phrases = (('$AUTHOR$', the_project.author), \
+                          ('$IFID$', generate_ifid(the_project.author + the_project.title)), \
+                          ('$DESC$', the_project.desc), ('$HTMLDESC$', the_project.htmldesc), \
+                          ('$EMAIL$', the_project.email))
+    the_project.new_file("start", 'start.t')
+    the_project.new_file("ignore", "ignore.txt")
 
 __author__ = 'dj'

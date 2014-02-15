@@ -11,6 +11,7 @@ import TranscriptView
 import MessageSystem
 import BuildProcess
 import ProjectFileSystem
+import FindReplaceWindow
 import pickle
 import os
 import sys
@@ -74,6 +75,12 @@ class MainWindow(wx.Frame):
         # Redo last adjustment in text in the notebook
         self.notebook.redo()
 
+    def find_replace(self, event):
+
+        # find/replace window
+        fr = FindReplaceWindow.FindReplaceWindow(self.project, self.notebook)
+        fr.Show()
+
     def new_page(self, event):
 
         # add new file to project (and query user for the name of the file)
@@ -103,12 +110,12 @@ class MainWindow(wx.Frame):
                 the_file = open(self.config_path, 'rb')
                 self.preferences = pickle.load(the_file)
                 the_file.close()
-		self.load_preferences()
             except IOError:
                 MessageSystem.error("Could not read file: " + self.config_path, self.config_path + " corrupted")
+            else:
+                self.load_preferences()
+                return
 
-            return
-	
         # no pref.conf, it's our first time loading tadspad
         self.first_time_load()
 

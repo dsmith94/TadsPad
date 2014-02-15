@@ -30,13 +30,16 @@ def create_message_pane(top_window):
     top_window.output_pane = MessagePane.OutputPane(top_window)
     top_window.message_book.AddPage(top_window.message_pane, "Context Help")
     top_window.message_book.AddPage(top_window.output_pane, "Compile Output")
-    the_pane = aui.AuiPaneInfo().PaneBorder(False).CloseButton(False).Name("messages")
+    the_pane = aui.AuiPaneInfo().PaneBorder(True).CloseButton(False).Name("messages")
     the_pane.MinSize(r.Width, r.Height / 6)
     the_pane.Bottom()
+    the_pane.BottomSnappable(False)
+    the_pane.BottomDockable(True)
     top_window.mgr.AddPane(top_window.message_book, the_pane)
     top_window.mgr.Update()
     top_window.message_pane.show_message("")
     top_window.message_book.Update()
+
 
 
 def create_object_browser(top_window):
@@ -49,7 +52,7 @@ def create_object_browser(top_window):
     top_window.project_browser = ProjectBrowser.ProjectBrowser(top_window.object_browser, parent=local_panel)
     the_pane = aui.AuiPaneInfo().CloseButton(False).Name("project")
     the_pane.MinSize((r.Width / 5, r.Width / 5))
-    the_pane.RightSnappable()
+    the_pane.RightSnappable(False)
     the_pane.Right()
     the_pane.Caption("Project View")
     sizer = wx.BoxSizer(wx.VERTICAL)
@@ -102,6 +105,7 @@ def create_menu_system(top_window):
     cut_item = edit_menu.Append(wx.ID_CUT, 'Cut\tCtrl+X', 'Cut')
     copy_item = edit_menu.Append(wx.ID_COPY, 'Copy\tCtrl+C', 'Copy')
     paste_item = edit_menu.Append(wx.ID_PASTE, 'Paste\tCtrl+V', 'Paste')
+    find_item = edit_menu.Append(wx.ID_FIND, 'Find and Replace\tCtrl+F', 'Find and Replace Text Strings')
     edit_menu.AppendSeparator()
     preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Preferences', 'Preferences')
     top_window.Bind(wx.EVT_MENU, top_window.undo, undo_item)
@@ -109,6 +113,7 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.cut, cut_item)
     top_window.Bind(wx.EVT_MENU, top_window.copy, copy_item)
     top_window.Bind(wx.EVT_MENU, top_window.paste, paste_item)
+    top_window.Bind(wx.EVT_MENU, top_window.find_replace, find_item)
 
     # view menu
     view_menu = wx.Menu()
@@ -150,8 +155,11 @@ def create_notebook(top_window):
 
     # make main notebook object
     top_window.mgr = aui.AuiManager()
+    top_window.mgr.SetAutoNotebookStyle(aui.AUI_MGR_SMOOTH_DOCKING | aui.AUI_DOCK_NONE)
+    top_window.mgr.SetDockSizeConstraint(0.5, 0.5)
     top_window.mgr.SetManagedWindow(top_window)
     top_window.notebook = CodeNotebook.Notebook(top_window)
     top_window.message_book = aui.AuiNotebook(top_window, agwStyle=aui.AUI_NB_BOTTOM)
     top_window.mgr.AddPane(top_window.notebook, aui.AuiPaneInfo().Name("notebook_code").CenterPane().PaneBorder(False))
     top_window.mgr.Update()
+

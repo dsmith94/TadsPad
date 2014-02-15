@@ -23,8 +23,6 @@ class Notebook(Aui.AuiNotebook):
         Aui.AuiNotebook.__init__(self, parent=parent)
         self.default_style = Aui.AUI_NB_DEFAULT_STYLE | Aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
         self.SetWindowStyleFlag(self.default_style)
-        self.SetArtProvider(Aui.ChromeTabArt())     # change tab art to be cross-platform friendly
-        # self.project_name = "unnamed project"
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
 
@@ -42,7 +40,6 @@ class Notebook(Aui.AuiNotebook):
 
         # load adv3lite worldmodel classes from file
         root = ProjectFileSystem.get_project_root()
-	print (root)
         path = os.path.join(root, project.name)
         if os.path.exists(os.path.join(path, "classes.dat")):
 
@@ -164,15 +161,18 @@ class Notebook(Aui.AuiNotebook):
 
         # create a new page and add it to our notebook
 
-        try:
-            from shutil import copyfile
-            copyfile("./blank.tmp", the_project.path + "/" + name + ".t")
-            the_project.files.append(name + ".t")
-            self.load_page(the_project.path, name + ".t", the_project.name)
-        except IOError, e:
-            MessageSystem.error("Unable to write new file: " + name + ".t", "No new file added - " + e.filename)
+        if name not in the_project.files:
+            try:
+                the_project.new_file("blank", name + ".t")
+            except IOError, e:
+                MessageSystem.error("Cannot add file: " + name, e.message)
+            else:
+                the_project.files.append(name + ".t")
+                self.load_page(the_project.path, name + ".t")
+        else:
+            MessageSystem.error("Cannot add file: " + name + " - already in project", "File Name Disambiguation")
 
-    def load_page(self, path, filename, prj_name, line_number=0):
+    def load_page(self, path, filename, line_number=0):
 
         # load page with filename passed above
         tp = wx.Panel(self)
@@ -184,10 +184,13 @@ class Notebook(Aui.AuiNotebook):
         tp.editor.path = path
         try:
             code = open(path + "/" + filename, 'rU')
-            tp.editor.SetText(code.read().replace("$FILENAME$", filename).replace("$TITLE$", prj_name))
+            text = code.read()
             code.close()
         except IOError, e:
             MessageSystem.error("Not able to open file: " + e.filename, "File load error")
+        else:
+            text = text.replace("$FILENAME$", filename)
+            tp.editor.SetText(text)
         tp.editor.Bind(wx.stc.EVT_STC_CHANGE, self.on_text_changed)
         self.AddPage(tp, tp.editor.filename)
         self.SetSelection(self.GetPageCount() - 1)
@@ -209,8 +212,18 @@ class Notebook(Aui.AuiNotebook):
             index += 1
 
         # try loading it from memory if we can't find it already open
-        self.load_page(self.GetTopLevelParent().project.path, name,
-                       self.GetTopLevelParent().project.title, line_number)
+        self.load_page(self.GetTopLevelParent().project.path, name, line_number)
+
+    def find_string(self, text):
+
+        # find string in selected page
+        try:
+            index = self.GetSelection()
+            page = self.GetPage(index)
+        except:
+            MessageSystem.error("No files opened, cannot search. ", "Search String Failure")
+        else:
+            page.editor.search_for(text)
 
     def highlight_error(self, name, line_number, error_string):
 
@@ -265,7 +278,7 @@ def parse_library(library):
     sources_raw = sources_file.read()
     sources_file.close()
     lines = sources_raw.split('\n')
-    source_pattern = re.compile("source:\s(\w*)")
+    source_pattern = re.compile("source:\s(.*)")
     sources = []
     number_of_sources = 0
     sources_index = 0
@@ -278,6 +291,7 @@ def parse_library(library):
     classes = []
     load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
     for source in sources:
+        print(os.path.join(path_string, source + ".t"))
         code_file = open(os.path.join(path_string, source + ".t"), 'rU')
         load_dlg.Update(sources_index, source + ".t")
         code = code_file.read()
