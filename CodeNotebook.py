@@ -214,7 +214,7 @@ class Notebook(Aui.AuiNotebook):
         # try loading it from memory if we can't find it already open
         self.load_page(self.GetTopLevelParent().project.path, name, line_number)
 
-    def find_string(self, text):
+    def find_string(self, text, status):
 
         # find string in selected page
         try:
@@ -223,7 +223,35 @@ class Notebook(Aui.AuiNotebook):
         except:
             MessageSystem.error("No files opened, cannot search. ", "Search String Failure")
         else:
+            n = page.editor.Text.count(text)
+            status.SetStatusText("Found " + str(n) + " occurrences")
             page.editor.search_for(text)
+
+    def replace_string(self, old, new, status):
+
+        # replace string in selected page
+        try:
+            index = self.GetSelection()
+            page = self.GetPage(index)
+        except:
+            MessageSystem.error("No files opened, cannot replace. ", "Replace String Failure")
+        else:
+            n = page.editor.Text.count(old)
+            status.SetStatusText("Replaced 1 of " + str(n) + " occurrences")
+            page.editor.replace_with(old, new)
+
+    def replace_all_string(self, old, new, status):
+
+        # replace all strings in selected page
+        try:
+            index = self.GetSelection()
+            page = self.GetPage(index)
+        except:
+            MessageSystem.error("No files opened, cannot replace. ", "Replace String Failure")
+        else:
+            n = page.editor.Text.count(old)
+            status.SetStatusText("Replaced all " + str(n) + " occurrences")
+            page.editor.replace_all_with(old, new)
 
     def highlight_error(self, name, line_number, error_string):
 

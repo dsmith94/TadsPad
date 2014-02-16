@@ -468,9 +468,42 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         textLength = len(text)
         minPos = self.GetAnchor()
         location = self.FindText(minPos, maxPos, text)
-        self.GotoPos(location)
-        self.SetAnchor(location)
-        self.SetCurrentPos(location + textLength)
+        if location != -1:
+            self.GotoPos(location)
+            self.SetAnchor(location)
+            self.SetCurrentPos(location + textLength)
+
+    def replace_with(self, old, new):
+
+        # replace one string within selection
+        maxPos = len(self.Text)
+        textLength = len(new)
+        minPos = self.GetAnchor()
+        location = self.FindText(minPos, maxPos, old)
+        if location != -1:
+            text = self.Text[location:]
+            self.BeginUndoAction()
+            text = text.replace(old, new, 1)
+            self.EndUndoAction()
+            self.Text = self.Text[:location] + text
+            self.GotoPos(location)
+            self.SetAnchor(location)
+            self.SetCurrentPos(location + textLength)
+
+    def replace_all_with(self, old, new):
+
+        # select text from anchor
+        maxPos = len(self.Text)
+        textLength = len(new)
+        minPos = self.GetAnchor()
+        location = self.FindText(minPos, maxPos, old)
+        if location != -1:
+            self.BeginUndoAction()
+            self.Text = self.Text.replace(old, new)
+            self.EndUndoAction()
+            self.GotoPos(location)
+            self.SetAnchor(location)
+            self.SetCurrentPos(location + textLength)
 
     def spellcheck(self, project):
 
