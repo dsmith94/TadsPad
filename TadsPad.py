@@ -34,11 +34,11 @@ class MainWindow(wx.Frame):
 
         # tads 3 path, varies according to platform
         if sys.platform == 'win32':
-            self.preferences["tadspath"] = "\"C:/Program Files/TADS 3/t3make.exe\" "
-            self.preferences["terp"] = "\"C:/Program Files/TADS 3/htmlt3.exe\" "
+            self.preferences["tadspath"] = "C:/Program Files/TADS 3/t3make.exe"
+            self.preferences["terp"] = "C:/Program Files/TADS 3/htmlt3.exe"
         else:
-            self.preferences["tadspath"] = "t3make "
-            self.preferences["terp"] = "frob "
+            self.preferences["tadspath"] = "t3make"
+            self.preferences["terp"] = "frob"
 
         # build main user interface
         BuildMainUi.init(self)
