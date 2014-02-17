@@ -12,6 +12,7 @@ import MessageSystem
 import BuildProcess
 import ProjectFileSystem
 import FindReplaceWindow
+import PrefsEditWindow
 import pickle
 import os
 import sys
@@ -283,7 +284,7 @@ class MainWindow(wx.Frame):
             self.project.author = get_author
             self.project.library = get_library
             ProjectFileSystem.new_project(self.project)
-            self.notebook.load_page(self.project.path, "start.t", self.project.title)
+            self.notebook.load_page(self.project.path, "start.t")
 
         else:
             if insist_mode:
@@ -307,6 +308,12 @@ class MainWindow(wx.Frame):
         # load transcript viewer with commands from last play-through
         transcript_viewer = TranscriptView.TranscriptViewWindow(self.project, self.preferences["terp"], self.preferences["tadspath"])
         transcript_viewer.Show()
+
+    def preferences_window(self, event):
+
+        # load preferences window
+        prefs_window = PrefsEditWindow.PrefsEditWindow(self.preferences)
+        prefs_window.Show()
 
 
 # run main window (top)

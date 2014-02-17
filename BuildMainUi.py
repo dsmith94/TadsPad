@@ -114,6 +114,7 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.copy, copy_item)
     top_window.Bind(wx.EVT_MENU, top_window.paste, paste_item)
     top_window.Bind(wx.EVT_MENU, top_window.find_replace, find_item)
+    top_window.Bind(wx.EVT_MENU, top_window.preferences_window, preferences_item)
 
     # view menu
     view_menu = wx.Menu()

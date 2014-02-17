@@ -10,7 +10,6 @@ import MessageSystem
 import unicodedata
 import string
 import hashlib
-import shutil
 from binascii import hexlify
 
 
