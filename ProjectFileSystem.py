@@ -91,9 +91,10 @@ class NewProjectWindow(wx.Dialog):
         box_master.Add(box_for_text, 0, wx.EXPAND | wx.ALL, border=width / 10)
         box_master.Add(box_for_buttons, 0, wx.EXPAND | wx.ALL, border=width / 10)
         box_master.SetSizeHints(self)
-        panel = wx.Panel(self)
-        panel.SetSizer(box_master)
-        panel.Layout()
+        box_master.Layout()
+        self.SetSizer(box_master)
+        self.Fit()
+        self.Update()
 
 
 def get_project_root():

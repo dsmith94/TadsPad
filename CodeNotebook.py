@@ -301,7 +301,6 @@ def parse_library(library):
 
     # parse all classes/members in the presently selected world-model library
     path_string = os.path.expanduser('~/Documents/TADS 3/extensions/adv3Lite')
-    print (path_string)
     sources_file = open(os.path.join(path_string, library + ".tl"), 'rU')
     sources_raw = sources_file.read()
     sources_file.close()
@@ -319,7 +318,6 @@ def parse_library(library):
     classes = []
     load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
     for source in sources:
-        print(os.path.join(path_string, source + ".t"))
         code_file = open(os.path.join(path_string, source + ".t"), 'rU')
         load_dlg.Update(sources_index, source + ".t")
         code = code_file.read()

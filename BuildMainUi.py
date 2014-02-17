@@ -162,5 +162,6 @@ def create_notebook(top_window):
     top_window.notebook = CodeNotebook.Notebook(top_window)
     top_window.message_book = aui.AuiNotebook(top_window, agwStyle=aui.AUI_NB_BOTTOM)
     top_window.mgr.AddPane(top_window.notebook, aui.AuiPaneInfo().Name("notebook_code").CenterPane().PaneBorder(False))
+    top_window.Fit()
     top_window.mgr.Update()
 

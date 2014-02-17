@@ -28,7 +28,8 @@ class TranscriptViewWindow(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(transcript_ctrl, 1, wx.EXPAND | wx.ALL)
         self.SetSizer(sizer)
-        self.SetBackgroundColour('WHEAT')
+        self.Fit()
+        self.Update()
 
     def command_activated(self, event):
 

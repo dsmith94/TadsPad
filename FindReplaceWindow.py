@@ -48,6 +48,7 @@ class FindReplaceWindow(wx.Frame):
         sizer.Add(buttons, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
         self.SetBackgroundColour(self.FindButton.GetBackgroundColour())
         self.SetSizer(sizer)
+        self.Fit()
         self.Update()
 
     def FindButtonPress(self, event):
