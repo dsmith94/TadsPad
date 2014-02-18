@@ -291,12 +291,12 @@ class MainWindow(wx.Frame):
                 MessageSystem.error("No project name given, TadsPad will now exit", "Goodbye!!")
                 self.Destroy()
 
+        self.object_browser.rebuild_object_catalog()
         self.project_browser.update_files()
 
         # load classes data from tads project directory
         self.notebook.load_classes(self.project)
         self.Title = "TadsPad - " + self.project.name
-
 
     def spell_check(self, event):
 

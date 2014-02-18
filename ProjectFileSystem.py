@@ -192,4 +192,5 @@ def new_project(the_project):
     the_project.new_file("start", 'start.t')
     the_project.new_file("ignore", "ignore.txt")
 
+
 __author__ = 'dj'

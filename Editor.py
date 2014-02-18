@@ -33,7 +33,6 @@ class ColorSchemer:
 
         ## constructor for ColorSchemer, set default colors and fonts
         font = wx.Font(12, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-        font.SetNoAntiAliasing(False)
         self.face = font.GetFaceName()
         self.size = font.GetPointSize()
         self.color_list = dict()
