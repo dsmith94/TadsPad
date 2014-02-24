@@ -328,8 +328,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         pre_return_list = list(set(pre_return_list))
         pre_return_list = filter_suggestions(self.get_word(), pre_return_list)
         pre_return_list.sort()
-        for entry in pre_return_list:
-            suggestions += entry + "^"
+        suggestions = '^'.join(pre_return_list)
         return suggestions
 
     def get_line_suggestions(self, line, inherits):

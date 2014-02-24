@@ -65,12 +65,13 @@ class ObjectBrowser(wx.ListCtrl):
                 MessageSystem.error("Could not load file: " + e.filename, "File read error")
 
             # if the file can be read, update objects from the file
-            if file_contents:
-                list_of_objects = search_for_objects(file_contents, file_name)
-                for o in list_of_objects:
+            else:
+                if file_contents:
+                    list_of_objects = search_for_objects(file_contents, file_name)
+                    for o in list_of_objects:
 
-                    # add object to our master object list
-                    self.notebook.objects.append(o)
+                        # add object to our master object list
+                        self.notebook.objects.append(o)
 
         # and update the columns in the catalog
         self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))

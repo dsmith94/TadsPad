@@ -86,6 +86,7 @@ def create_menu_system(top_window):
     file_menu.AppendSeparator()
     new_project_item = project_menu.Append(wx.ID_ANY, 'New Project', 'Create New Project...')
     load_project_item = project_menu.Append(wx.ID_ANY, 'Load Project', 'Load Previously Edited Project...')
+    close_project_item = project_menu.Append(wx.ID_ANY, 'Close Project', 'Close Current TadsPad Project')
     file_menu.AppendMenu(wx.ID_ANY, "Project", project_menu)
     file_menu.AppendSeparator()
     exit_program_item = file_menu.Append(wx.ID_EXIT, 'Exit', 'Exit TadsPad')
@@ -96,6 +97,7 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.new_page, add_empty_item)
     top_window.Bind(wx.EVT_MENU, top_window.new_project, new_project_item)
     top_window.Bind(wx.EVT_MENU, top_window.load_project, load_project_item)
+    top_window.Bind(wx.EVT_MENU, top_window.close_project, close_project_item)
 
     # edit menu
     edit_menu = wx.Menu()
@@ -140,6 +142,21 @@ def create_menu_system(top_window):
     about_item = help_menu.Append(wx.ID_ABOUT, 'About TadsPad...', 'About TadsPad...')
     top_window.Bind(wx.EVT_MENU, MessageSystem.bookshelf_system, bookshelf_item)
     top_window.Bind(wx.EVT_MENU, MessageSystem.about_box, about_item)
+
+    # make list of menu items to gray out when project is not loaded
+    top_window.grayable.append(add_empty_item)
+    top_window.grayable.append(save_item)
+    top_window.grayable.append(save_all_item)
+    top_window.grayable.append(save_as_item)
+    top_window.grayable.append(undo_item)
+    top_window.grayable.append(redo_item)
+    top_window.grayable.append(cut_item)
+    top_window.grayable.append(copy_item)
+    top_window.grayable.append(paste_item)
+    top_window.grayable.append(find_item)
+    top_window.grayable.append(view_transcript_item)
+    top_window.grayable.append(spell_item)
+    top_window.grayable.append(play_project_item)
 
     # finalize finished menu
     menu_bar.Append(file_menu, '&File')

@@ -29,6 +29,27 @@ class TadsProject():
         self.files.append("start.t")
         self.phrases = []   # special tags used in making new project files
 
+    def write(self):
+
+        # write makefile, for compilation process
+        path_string = get_project_root() + self.name + "/"
+        try:
+            f = open("./makefile.tmp", 'r')
+            file_text = f.read()
+            file_text = file_text.replace('$NAME$', self.name)
+            files = ""
+            for file_name in self.files:
+                files = files + "-source " + file_name[:-2] + "\n"
+            file_text = file_text.replace('$SOURCE$', files)
+            file_text = file_text.replace('$LIBRARY$', self.library)
+            finished = open(path_string + self.name + ".t3m", 'w')
+            finished.write("%s" % file_text)
+            f.close()
+            finished.close()
+        except IOError, er:
+            MessageSystem.error("Could not write data to file. Error:" + er.filename,
+                                "Failed to create makefile")
+
     def new_file(self, name, dest):
 
         # create a new file for project, with tokens changed to match current project config
@@ -110,12 +131,27 @@ def get_project_root():
     return path_string
 
 
-def load_project(file_name, the_project):
+def generate_ifid(author_and_title_string):
+    s = str(hexlify(hashlib.md5(author_and_title_string).digest()).upper())
+    s = s[:20] + '-' + s[20:]
+    s = s[:16] + '-' + s[16:]
+    s = s[:12] + '-' + s[12:]
+    s = s[:8] + '-' + s[8:]
+    return s
+
+
+def load_project(file_name):
 
     # load project from filename
+    the_project = TadsProject()
     try:
         f = open(file_name, 'r')
         file_text = f.read()
+        f.close()
+    except IOError, e:
+        MessageSystem.error("Could not load file: " + e.filename + " - fail.", "Project load error")
+        return None
+    else:
 
         # describe to parser what a source definition looks like
         sources = re.compile("-source ([\s|\"*|a-zA-Z]*)")
@@ -135,44 +171,10 @@ def load_project(file_name, the_project):
         list_of_sources = sources.findall(file_text)
         for source_file in list_of_sources:
             the_project.files.append(source_file.strip('\n').strip('"').strip("'") + ".t")
-        f.close()
         the_project.filename = os.path.basename(file_name)
         the_project.name = os.path.splitext(the_project.filename)[0]
         the_project.path = os.path.dirname(file_name)
-
-    except IOError, e:
-        MessageSystem.error("Could not load file: " + e.filename + " - fail.", "Project load error")
-
-
-def generate_ifid(author_and_title_string):
-    s = str(hexlify(hashlib.md5(author_and_title_string).digest()).upper())
-    s = s[:20] + '-' + s[20:]
-    s = s[:16] + '-' + s[16:]
-    s = s[:12] + '-' + s[12:]
-    s = s[:8] + '-' + s[8:]
-    return s
-
-
-def write_makefile(project):
-
-    # write makefile, for compilation process
-    path_string = get_project_root() + project.name + "/"
-    try:
-        f = open("./makefile.tmp", 'r')
-        file_text = f.read()
-        file_text = file_text.replace('$NAME$', project.name)
-        files = ""
-        for file_name in project.files:
-            files = files + "-source " + file_name[:-2] + "\n"
-        file_text = file_text.replace('$SOURCE$', files)
-        file_text = file_text.replace('$LIBRARY$', project.library)
-        finished = open(path_string + project.name + ".t3m", 'w')
-        finished.write("%s" % file_text)
-        f.close()
-        finished.close()
-    except IOError, er:
-        MessageSystem.error("Could not write data to file. Error:" + er.filename,
-                            "Failed to create makefile")
+        return the_project
 
 
 def new_project(the_project):
@@ -182,7 +184,7 @@ def new_project(the_project):
     os.makedirs(os.path.join(path_string, the_project.name))
     os.makedirs(os.path.join(path_string, the_project.name, "obj"))
     path_string = os.path.join(path_string, the_project.name)
-    write_makefile(the_project)
+    the_project.write()
     the_project.filename = the_project.name + ".t3m"
     the_project.path = path_string
     the_project.phrases = (('$AUTHOR$', the_project.author), \

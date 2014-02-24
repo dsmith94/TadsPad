@@ -13,6 +13,7 @@ import BuildProcess
 import ProjectFileSystem
 import FindReplaceWindow
 import PrefsEditWindow
+import Welcome
 import pickle
 import os
 import sys
@@ -21,6 +22,9 @@ import sys
 class MainWindow(wx.Frame):
     def __init__(self, title):
         wx.Frame.__init__(self, None, title=title)
+
+        # list to gray certain menu items when no project loaded
+        self.grayable = []
 
         # find config data
         self.config_path = ""
@@ -44,12 +48,25 @@ class MainWindow(wx.Frame):
         BuildMainUi.init(self)
         self.Bind(wx.EVT_CLOSE, self.on_quit)
 
+        # by default, with no project loaded, most menu items are grayed out
+        self.menus(False)
+
         # pass reference to this window to the message subsystem
         MessageSystem.MainWindow.instance = self
 
         # load last project
-        self.project = ProjectFileSystem.TadsProject()
+        self.project = None
         self.on_load()
+
+        for key in self.preferences:
+            print key
+
+    def menus(self, enabled):
+
+        # enable or disable menus
+        # usually we disable menu items when no project is loaded
+        for m in self.grayable:
+            m.Enable(enabled)
 
     def undo(self, event):
 
@@ -124,20 +141,36 @@ class MainWindow(wx.Frame):
 
         # load program preferences from file
         # chief here is the last opened project
-        try:
-            ProjectFileSystem.load_project(self.preferences["last project"], self.project)
-            self.mgr.LoadPerspective(self.preferences["layout"])
+        if self.preferences["last project"]:
+            self.project = ProjectFileSystem.load_project(self.preferences["last project"])
+        self.mgr.LoadPerspective(self.preferences["layout"])
+        if self.project:
             self.object_browser.rebuild_object_catalog()
             self.project_browser.update_files()
             self.notebook.load_classes(self.project)
-        except:
-            self.insist_on_new_project()
+            self.Title = "TadsPad - " + self.project.name
+            self.menus(True)
 
     def first_time_load(self):
 
         # first time loading tadspad, give user some options
-        MessageSystem.error("Welcome to TadsPad! Let's make a new project together.", "First time user")
-        self.insist_on_new_project()
+        box = Welcome.Box(self.preferences).ShowModal()
+        if box == wx.ID_NEW:
+
+            # new project selected
+            self.new_project_window()
+
+        if box == wx.ID_OPEN:
+
+            # load project from file
+            # this triggers the open project menu function, so give it the button event instead of normal menu event
+            self.load_project(wx.EVT_BUTTON)
+
+        if box == wx.ID_HELP:
+
+            # open tadspad tutorial
+            print('no help yet')
+
 
     def save_preferences(self):
 
@@ -146,14 +179,17 @@ class MainWindow(wx.Frame):
         self.preferences["layout"] = self.mgr.SavePerspective()
         if not os.path.exists(path):
             os.makedirs(path)
-        self.preferences.update({"last project": os.path.join(self.project.path, self.project.filename)})
+        if self.project:
+            self.preferences.update({"last project": os.path.join(self.project.path, self.project.filename)})
+            self.project.write()
+        else:
+            self.preferences.update({"last project": None})
         try:
             output = open(self.config_path, 'wb')
             pickle.dump(self.preferences, output)
             output.close()
         except IOError, e:
             MessageSystem.error("Could not save preferences: " + e.filename, "File write error")
-        ProjectFileSystem.write_makefile(self.project)
 
     def on_quit(self, event):
         unsaved_pages = self.notebook.get_unsaved_pages()
@@ -168,6 +204,15 @@ class MainWindow(wx.Frame):
             # save preferences to file before quit
             self.save_preferences()
             wx.App.Exit(app)
+
+    def close_project(self, event):
+
+        # close current tadspad project
+        self.project = None
+        self.object_browser.DeleteAllItems()
+        self.project_browser.DeleteAllItems()
+        self.menus(False)
+
 
     def play_project(self, event):
 
@@ -186,11 +231,13 @@ class MainWindow(wx.Frame):
             return
         else:
             self.notebook.close_all()
-            ProjectFileSystem.load_project(loadFileDialog.Path, self.project)
-            self.project_browser.update_files()
-            self.object_browser.rebuild_object_catalog()
-            self.notebook.load_classes(self.project)
-            self.Title = "TadsPad - " + self.project.name
+            self.project = ProjectFileSystem.load_project(loadFileDialog.Path)
+            if self.project:
+                self.project_browser.update_files()
+                self.object_browser.rebuild_object_catalog()
+                self.notebook.load_classes(self.project)
+                self.Title = "TadsPad - " + self.project.name
+                self.menus(True)
 
     def save_page(self, event):
 
@@ -213,15 +260,10 @@ class MainWindow(wx.Frame):
         self.object_browser.rebuild_object_catalog()
         self.project_browser.update_files()
 
-    def insist_on_new_project(self):
-
-        # FORCE the user to make a new project, or quit tadspad
-        self.new_project_window(True)
-
     def new_project(self, event):
 
         # new project, but don't insist
-        self.new_project_window(False)
+        self.new_project_window()
 
     def show_message(self, text):
 
@@ -254,9 +296,9 @@ class MainWindow(wx.Frame):
             self.mgr.GetPane('project').Show()
         self.mgr.Update()
 
-    def new_project_window(self, insist_mode):
+    def new_project_window(self):
 
-        # create a new project. if insist mode is on, keep user from NOT making a project
+        # create a new project.
 
         # call the new project routine from library
         self.project = ProjectFileSystem.TadsProject()
@@ -270,7 +312,7 @@ class MainWindow(wx.Frame):
             get_name = ProjectFileSystem.remove_disallowed_filename_chars(dlg.game_name.GetValue())
             get_title = dlg.game_title.GetValue()
             get_author = dlg.author.GetValue()
-            if dlg.lite.GetValue() == True:
+            if dlg.lite.GetValue():
                 get_library = "adv3Lite"
             else:
                 get_library = "adv3Liter"
@@ -285,18 +327,13 @@ class MainWindow(wx.Frame):
             self.project.library = get_library
             ProjectFileSystem.new_project(self.project)
             self.notebook.load_page(self.project.path, "start.t")
+            self.object_browser.rebuild_object_catalog()
+            self.project_browser.update_files()
 
-        else:
-            if insist_mode:
-                MessageSystem.error("No project name given, TadsPad will now exit", "Goodbye!!")
-                self.Destroy()
-
-        self.object_browser.rebuild_object_catalog()
-        self.project_browser.update_files()
-
-        # load classes data from tads project directory
-        self.notebook.load_classes(self.project)
-        self.Title = "TadsPad - " + self.project.name
+            # load classes data from tads project directory
+            self.notebook.load_classes(self.project)
+            self.Title = "TadsPad - " + self.project.name
+            self.menus(True)
 
     def spell_check(self, event):
 

@@ -19,7 +19,7 @@ def run(the_thread, the_project, terp, tads3path, script=""):
 
     # compile game for playing
     MessageSystem.show_message("Building " + the_project.name + "...")
-    ProjectFileSystem.write_makefile(the_project)
+    the_project.write()
     options = " -o \"" + os.path.join(the_project.path, "transcript.txt\" ")
     if " " in tads3path:
         compiler = "\"" + tads3path + "\""
