@@ -26,6 +26,10 @@ class Notebook(Aui.AuiNotebook):
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
 
+        # editor colors and text size
+        self.colors = os.path.join('themes', 'Obsidian.xml')
+        self.size = 12
+
         # the objects and classes
         self.objects = list()
         self.classes = []
@@ -178,6 +182,10 @@ class Notebook(Aui.AuiNotebook):
         tp = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
         tp.editor = Editor.EditorCtrl(self.classes, tp, self)
+        tp.editor.scheme.colors = self.colors
+        tp.editor.scheme.size = self.size
+        tp.editor.scheme.load_colors(tp.editor.scheme.colors)
+        tp.editor.scheme.update_colors(tp.editor)
         tp.SetSizerAndFit(sizer)
         sizer.Add(tp.editor, 1, wx.EXPAND | wx.ALL)
         tp.editor.filename = filename
@@ -295,6 +303,14 @@ class Notebook(Aui.AuiNotebook):
             page.editor.spellcheck(project)
         else:
             MessageSystem.error("Cannot spell-check without a valid TADS file open. ", "Spell check fail")
+
+    def retheme(self):
+
+        # re-theme all pages in this notebook with current theme values
+        for page in self:
+            page.editor.scheme.size = self.size
+            page.editor.scheme.load_colors(self.colors)
+            page.editor.scheme.update_colors(page.editor)
 
 
 def parse_library(library):

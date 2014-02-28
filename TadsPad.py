@@ -13,6 +13,7 @@ import BuildProcess
 import ProjectFileSystem
 import FindReplaceWindow
 import PrefsEditWindow
+import ThemeDialog
 import Welcome
 import pickle
 import os
@@ -29,9 +30,9 @@ class MainWindow(wx.Frame):
         # find config data
         self.config_path = ""
         if sys.platform == 'win32':
-            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad", "prefs.conf")
+            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad", "prefs.dat")
         else:
-            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.conf")
+            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.dat")
 
         # user preferences - blank by default, until we load something in them
         self.preferences = {}
@@ -99,6 +100,16 @@ class MainWindow(wx.Frame):
         fr = FindReplaceWindow.FindReplaceWindow(self.project, self.notebook)
         fr.Show()
 
+    def theme_window(self, event):
+
+        # edit editor theme with dialog
+        box = ThemeDialog.Box(self.notebook.colors, self.notebook.size)
+        result = box.ShowModal()
+        if result == wx.ID_OK:
+            self.notebook.colors = box.theme.Value
+            self.notebook.size = box.slider.Value
+            self.notebook.retheme()
+
     def new_page(self, event):
 
         # add new file to project (and query user for the name of the file)
@@ -144,6 +155,10 @@ class MainWindow(wx.Frame):
         if self.preferences["last project"]:
             self.project = ProjectFileSystem.load_project(self.preferences["last project"])
         self.mgr.LoadPerspective(self.preferences["layout"])
+        if "colors" in self.preferences:
+            self.notebook.colors = self.preferences["colors"]
+        if "size" in self.preferences:
+            self.notebook.size = int(self.preferences["size"])
         if self.project:
             self.object_browser.rebuild_object_catalog()
             self.project_browser.update_files()
@@ -179,6 +194,8 @@ class MainWindow(wx.Frame):
         self.preferences["layout"] = self.mgr.SavePerspective()
         if not os.path.exists(path):
             os.makedirs(path)
+        self.preferences.update({"colors": self.notebook.colors})
+        self.preferences.update({"size": self.notebook.size})
         if self.project:
             self.preferences.update({"last project": os.path.join(self.project.path, self.project.filename)})
             self.project.write()
@@ -224,14 +241,14 @@ class MainWindow(wx.Frame):
     def load_project(self, event):
 
         # load previously worked on project
-        path = os.path.abspath(os.path.expanduser("~/Documents/TADS 3/"))
-        loadFileDialog = wx.FileDialog(self, "Load .t3m file", "", "", "t files (*.t3m)|*.t3m",
-                                       wx.FD_OPEN)
-        if loadFileDialog.ShowModal() == wx.ID_CANCEL:
+        path = os.path.abspath(os.path.join(os.path.expanduser("~/Documents"), "TADS 3/"))
+        dialog = wx.FileDialog(self, "Load .t3m file", "", "", "t files (*.t3m)|*.t3m", wx.FD_OPEN)
+        dialog.Path = path + "/"
+        if dialog.ShowModal() == wx.ID_CANCEL:
             return
         else:
             self.notebook.close_all()
-            self.project = ProjectFileSystem.load_project(loadFileDialog.Path)
+            self.project = ProjectFileSystem.load_project(dialog.Path)
             if self.project:
                 self.project_browser.update_files()
                 self.object_browser.rebuild_object_catalog()

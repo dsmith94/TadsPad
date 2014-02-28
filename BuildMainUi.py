@@ -109,6 +109,7 @@ def create_menu_system(top_window):
     paste_item = edit_menu.Append(wx.ID_PASTE, 'Paste\tCtrl+V', 'Paste')
     find_item = edit_menu.Append(wx.ID_FIND, 'Find and Replace\tCtrl+F', 'Find and Replace Text Strings')
     edit_menu.AppendSeparator()
+    theme_item = edit_menu.Append(wx.ID_ANY, 'Text Settings', 'Change Text Size and Color')
     preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Preferences', 'Preferences')
     top_window.Bind(wx.EVT_MENU, top_window.undo, undo_item)
     top_window.Bind(wx.EVT_MENU, top_window.redo, redo_item)
@@ -117,6 +118,7 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.paste, paste_item)
     top_window.Bind(wx.EVT_MENU, top_window.find_replace, find_item)
     top_window.Bind(wx.EVT_MENU, top_window.preferences_window, preferences_item)
+    top_window.Bind(wx.EVT_MENU, top_window.theme_window, theme_item)
 
     # view menu
     view_menu = wx.Menu()

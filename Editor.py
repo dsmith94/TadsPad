@@ -9,7 +9,7 @@ import atd
 import SpellCheckerWindow
 import MessageSystem
 import os
-
+import xml.etree.ElementTree as ET
 
 # english defaults for verify, check
 verify_token = "verify"
@@ -31,57 +31,71 @@ class ColorSchemer:
 
     def __init__(self):
 
-        ## constructor for ColorSchemer, set default colors and fonts
+        # constructor for ColorSchemer, set default colors and fonts
         font = wx.Font(12, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.face = font.GetFaceName()
         self.size = font.GetPointSize()
-        self.color_list = dict()
+        self.colors = None
 
-        ## attempt to load default color config
-        try:
-            self.load_colors('default.conf')
-        except IOError, e:
-            MessageSystem.error("Could not locate file: " + e.filename + " - TadsPad will exit.", "Terminal failure")
-            sys.exit(1)
+        # attempt to load default color config
+        self.load_colors(os.path.join('themes', 'Obsidian.xml'))
 
     def load_colors(self, filename):
 
-        ## load color settings from file
-        f = open(filename, 'r')
-        for line in f:
-            parsed = line.split(' ', 1)
-            if parsed[0] != "CARET":
-                self.color_list.update({parsed[0]: parsed[1].strip("\n") + ",face:%s,size:%d," % (self.face, self.size)})
-            else:
-                self.color_list.update({parsed[0]: parsed[1].strip("\n")})
-        f.close()
+        # load color settings from xml file
+        try:
+            tree = ET.parse(filename)
+            self.colors = tree.getroot()
+        except IOError, e:
+            MessageSystem.error("Could not locate file: " + e.filename, "Theme Change Unsuccessful")
 
     def update_colors(self, ctrl):
 
-        # set styles from our colors list dictionary
-        ctrl.SetCaretForeground(self.color_list["CARET"])
-        ctrl.StyleSetSpec(wx.stc.STC_STYLE_LINENUMBER, self.color_list["LINENUMBER"])
-        ctrl.StyleSetSpec(wx.stc.STC_STYLE_DEFAULT, self.color_list["DEFAULT"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_DEFAULT, self.color_list["DEFAULT"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_BLOCK_COMMENT, self.color_list["BLOCK_COMMENT"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_LINE_COMMENT, self.color_list["LINE_COMMENT"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_D_STRING, self.color_list["D_STRING"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_S_STRING, self.color_list["S_STRING"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_HTML_DEFAULT, self.color_list["HTML_DEFAULT"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_HTML_STRING, self.color_list["HTML_STRING"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_HTML_TAG, self.color_list["HTML_TAG"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_IDENTIFIER, self.color_list["IDENTIFIER"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_LIB_DIRECTIVE, self.color_list["LIB_DIRECTIVE"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_MSG_PARAM, self.color_list["MSG_PARAM"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_NUMBER, self.color_list["NUMBER"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_OPERATOR, self.color_list["OPERATOR"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_PREPROCESSOR, self.color_list["PREPROCESSOR"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_KEYWORD, self.color_list["KEYWORD"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_USER1, self.color_list["USER1"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_USER2, self.color_list["USER2"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_USER3, self.color_list["USER3"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_X_DEFAULT, self.color_list["X_DEFAULT"])
-        ctrl.StyleSetSpec(wx.stc.STC_T3_X_STRING, self.color_list["X_STRING"])
+        # set styles from xml colors tree in memory
+        color = wx.stc
+        caret = [c.attrib['color'] for c in self.colors if c.tag == 'foreground']
+        if caret:
+            caret = caret[0]
+        else:
+            caret = 'BLACK'
+        background = [c.attrib['color'] for c in self.colors if c.tag == 'background']
+        if background:
+            background = background[0]
+        else:
+            background = 'WHITE'
+        foregrounds = dict()
+        foregrounds[color.STC_STYLE_LINENUMBER] = 'lineNumber'
+        foregrounds[color.STC_STYLE_DEFAULT] = 'foreground'
+        foregrounds[color.STC_T3_DEFAULT] = 'foreground'
+        foregrounds[color.STC_T3_X_DEFAULT] = 'foreground'
+        foregrounds[color.STC_T3_KEYWORD] = 'keyword'
+        foregrounds[color.STC_T3_BLOCK_COMMENT] = 'multiLineComment'
+        foregrounds[color.STC_T3_LINE_COMMENT] = 'singleLineComment'
+        foregrounds[color.STC_T3_HTML_STRING] = 'string'
+        foregrounds[color.STC_T3_S_STRING] = 'string'
+        foregrounds[color.STC_T3_D_STRING] = 'string'
+        foregrounds[color.STC_T3_X_STRING] = 'string'
+        foregrounds[color.STC_T3_HTML_STRING] = 'string'
+        foregrounds[color.STC_SEL_LINES] = 'selectionForeground'
+        foregrounds[color.STC_T3_HTML_DEFAULT] = 'class'
+        foregrounds[color.STC_T3_HTML_TAG] = 'class'
+        foregrounds[color.STC_T3_OPERATOR] = 'operator'
+        foregrounds[color.STC_T3_MSG_PARAM] = 'operator'
+        foregrounds[color.STC_T3_IDENTIFIER] = 'operator'
+        foregrounds[color.STC_T3_NUMBER] = 'number'
+        foregrounds[color.STC_T3_PREPROCESSOR] = 'constant'
+        foregrounds[color.STC_T3_LIB_DIRECTIVE] = 'constant'
+        for key, value in foregrounds.iteritems():
+            for c in self.colors:
+                weight = ''
+                if key == color.STC_T3_BLOCK_COMMENT or key == color.STC_T3_LINE_COMMENT:
+                    weight = ',italic'
+                if key == color.STC_T3_KEYWORD:
+                    weight = ',bold'
+                if c.tag == value:
+                    style = "fore:%s,back:%s,face:%s,size:%d%s" % (c.attrib['color'], background, self.face, self.size, weight)
+                    ctrl.StyleSetSpec(key, style)
+        ctrl.SetCaretForeground(caret)
 
 
 class EditorCtrl(wx.stc.StyledTextCtrl):
@@ -104,6 +118,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # set lexer to tads 3
         self.SetLexer(wx.stc.STC_LEX_TADS3)
+        self.SetKeyWords(0, "break case catch class case continue do default delete else enum finally for foreach function goto if intrinsic local modify new nil property replace return self switch throw token true try while")
 
         # default margin settings
         self.SetMarginType(0, wx.stc.STC_MARGIN_NUMBER)
@@ -111,8 +126,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.SetMarginWidth(0, (r.Width / 30))
 
         ## set color scheme object
-        self.color_scheme = ColorSchemer()
-        self.color_scheme.update_colors(self)
+        self.scheme = ColorSchemer()
 
         # indents
         self.SetIndent(4)
@@ -277,7 +291,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def build_suggestions(self, code):
 
         # build suggestions from the code passed above
-        suggestions = ""
         lines = code.split("\n")
         enclosures = in_enclosure(lines)
         in_verify = verify_token in enclosures
@@ -287,49 +300,33 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         in_iobj = "iobjFor" in enclosures
 
         # with some context info collected, build a list of library info
-        pre_return_list = []
+        results = []
         if in_dobj or in_iobj:
             if not in_verify and not in_check and not in_action:
-                pre_return_list.append("preCond")
-                pre_return_list.append(verify_token + "()")
-                pre_return_list.append(check_token + "()")
-                pre_return_list.append(action_token + "()")
-                for entry in pre_return_list:
-                    suggestions += entry + "^"
-                return suggestions
+                return '^'.join(["preCond", verify_token + "()", check_token + "()", action_token + "()"])
             if in_verify:
-                pre_return_list.append("logicalRank(rank, key);")
-                pre_return_list.append("dangerous")
-                pre_return_list.append("illogicalNow(msg, params);")
-                pre_return_list.append("illogical(msg, params);")
-                pre_return_list.append("illogicalSelf(msg, params);")
-                pre_return_list.append("nonObvious")
-                pre_return_list.append("inaccessible(msg, params);")
+                results.extend(["logicalRank(rank, key);", "dangerous", "illogicalNow(msg, params);",
+                                "illogical(msg, params);", "illogicalSelf(msg, params);", "nonObvious",
+                                "inaccessible(msg, params);"])
         inherits = find_object(lines, self.notebook.objects)
         if inherits:
             check_on_line = self.get_line_suggestions(lines[-2], inherits)
             if check_on_line is not None:
                 return check_on_line
-            for i in inherits:
-                for c in self.classes:
-                    if i == c.name:
-                        for m in c.members:
-                            pre_return_list.append(m.name)
+            results.extend([x.name for i in inherits for c in self.classes if i == c.name for x in c.members])
         else:
             # we're not editing an object, so provide the verb creation options if no indent is set
             if self.GetLineIndentation(self.GetCurrentLine()) == 0:
                 return self.handle_not_in_object()
 
-        # apply object listing first
-        for o in self.notebook.objects:
-            pre_return_list.append(o.name)
+        # provide names of other objects in game
+        results.extend([o.name for o in self.notebook.objects])
 
         # finalize for return
-        pre_return_list = list(set(pre_return_list))
-        pre_return_list = filter_suggestions(self.get_word(), pre_return_list)
-        pre_return_list.sort()
-        suggestions = '^'.join(pre_return_list)
-        return suggestions
+        results = list(set(results))
+        results = filter_suggestions(self.get_word(), results)
+        results.sort()
+        return '^'.join(results)
 
     def get_line_suggestions(self, line, inherits):
 
