@@ -59,9 +59,6 @@ class MainWindow(wx.Frame):
         self.project = None
         self.on_load()
 
-        for key in self.preferences:
-            print key
-
     def menus(self, enabled):
 
         # enable or disable menus
