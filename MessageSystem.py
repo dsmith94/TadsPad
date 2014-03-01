@@ -3,7 +3,9 @@
 ## library to communicate messages to user
 
 import wx
+import os
 import webbrowser
+import ProjectFileSystem
 
 Version_Number = "0.1"
 About_Text = "TadsPad\nby dj\nVersion "
@@ -24,7 +26,8 @@ class MainWindow(object):
 def bookshelf_system(parent):
 
     # use web browser to display TADS 3 adv3lite bookshelf
-    url = "https://dl.dropboxusercontent.com/u/58348218/adv3Lite/docs/index.htm"
+    path = ProjectFileSystem.get_project_root()
+    url = os.path.join(path, 'extensions', 'adv3Lite', 'docs', 'index.htm')
     webbrowser.open(url, new=newBrowserTab)
 
 
@@ -67,6 +70,11 @@ def show_errors(errors_list):
 
     # display errors as a listctrl report
     MainWindow.get_instance().show_errors(errors_list)
+
+def clear_errors():
+
+    # clear errors on bottom panel
+    MainWindow.get_instance().clear_errors()
 
 def error(message, title):
 

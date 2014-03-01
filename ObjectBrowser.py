@@ -56,6 +56,7 @@ class ObjectBrowser(wx.ListCtrl):
         # loop through all files in project, and get objects in each
         files = wx.GetTopLevelParent(self).project.files
         path = wx.GetTopLevelParent(self).project.path
+        master = ''
         for file_name in files:
             try:
                 f = open(path + "/" + file_name, 'r')
@@ -67,7 +68,11 @@ class ObjectBrowser(wx.ListCtrl):
             # if the file can be read, update objects from the file
             else:
                 if file_contents:
+                    master += file_contents
                     list_of_objects = search_for_objects(file_contents, file_name)
+
+                    # extract members and data from objects
+                    TClass.objs(file_contents, list_of_objects)
                     for o in list_of_objects:
 
                         # add object to our master object list
@@ -76,6 +81,10 @@ class ObjectBrowser(wx.ListCtrl):
         # and update the columns in the catalog
         self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))
 
+        # update classes which contain 'modify' keyword
+        TClass.modify(master, self.notebook.classes)
+
+        # now update the notebook objects list box
         index = 0
         for o in self.notebook.objects:
             self.InsertStringItem(index, o.name)

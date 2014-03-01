@@ -314,6 +314,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             if check_on_line is not None:
                 return check_on_line
             results.extend([x.name for i in inherits for c in self.classes if i == c.name for x in c.members])
+            object_reference = find_object_reference(lines[-2], self.notebook.objects)
+            if object_reference:
+                results.extend([x.name for x in object_reference.members])
         else:
             # we're not editing an object, so provide the verb creation options if no indent is set
             if self.GetLineIndentation(self.GetCurrentLine()) == 0:

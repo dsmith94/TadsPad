@@ -15,9 +15,10 @@ class CompileGame(Thread):
         Thread.__init__(self)
 
 
-def run(the_thread, the_project, terp, tads3path, script=""):
+def run(the_thread, the_project, terp, tads3path, script="", flags=""):
 
     # compile game for playing
+    MessageSystem.clear_errors()
     MessageSystem.show_message("Building " + the_project.name + "...")
     the_project.write()
     options = " -o \"" + os.path.join(the_project.path, "transcript.txt\" ")
@@ -29,7 +30,7 @@ def run(the_thread, the_project, terp, tads3path, script=""):
         interpreter = "\"" + terp + "\""
     else:
         interpreter = terp
-    project_to_compile = " -f \"" + the_project.path + "/" + the_project.filename + "\""
+    project_to_compile = flags + " -f \"" + the_project.path + "/" + the_project.filename + "\""
     if os.path.exists(compiler.replace("\"", "")) is False:
         MessageSystem.error("Could not compile project: " + the_project.filename + ", executable " +
                             compiler + " does not exist.", "Compile failure")

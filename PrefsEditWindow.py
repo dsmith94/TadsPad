@@ -8,7 +8,7 @@ import wx
 class PrefsEditWindow(wx.Dialog):
 
     def __init__(self, prefs):
-        wx.Dialog.__init__(self, None, title="Edit Preferences", style=wx.CHOICEDLG_STYLE | wx.TAB_TRAVERSAL)
+        wx.Dialog.__init__(self, None, title="Edit TADS Path Location", style=wx.CHOICEDLG_STYLE | wx.TAB_TRAVERSAL)
 
         # init new prefs dialog
         self.prefs = prefs

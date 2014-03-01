@@ -71,8 +71,7 @@ class TadsProject():
                 final_file.write(text)
                 final_file.close()
             except IOError, e:
-                MessageSystem.error("Could not write file: " + e.filename,
-                                    "File Write Failure")
+                MessageSystem.error("Could not write file: " + e.filename, "File Write Failure")
 
 
 def remove_disallowed_filename_chars(filename):

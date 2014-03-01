@@ -12,6 +12,7 @@ object_pattern = re.compile("(\w*):\s([\w|,|\s]*)")
 block_comments = re.compile("/\*.*?\*/", flags=re.S)
 method_pattern = re.compile("(\w*\((\w*)\))")
 property_pattern = re.compile("(\w*)\s=")
+modify_pattern = re.compile("\s*modify\s(\w*)")
 
 
 class TClass:
@@ -30,6 +31,15 @@ class TClass:
     def __repr__(self):
         return repr((self.name, self.file, self.line, self.inherits))
 
+    def extract(self, code):
+
+        # extract code for this modify
+        for line in code:
+            if line == ";":
+                return
+            else:
+                self.code += line + '\n'
+
     def get_code_from_string(self, string):
 
         # fill the class with code from this string, using line number
@@ -42,19 +52,20 @@ class TClass:
                 self.code = self.code + line + '\n'
             index += 1
 
-    def add_member(self, member):
+    def add_member(self, members):
 
-        # add member to members array
+        # add list of members to members array
         # replace if exists
-        index = 0
-        for m in self.members[:]:
-            if m.name is member.name:
+        for s in members:
+            index = 0
+            for m in self.members[:]:
+                if m.name == s.name:
 
-                # we have match, replace (but save the help if the one to be replace has none)
-                self.members[index] = member
-                return
-            index += 1
-        self.members.append(member)
+                    # we have match, replace (but save the help if the one to be replace has none)
+                    self.members[index] = s
+                    return
+                index += 1
+            self.members.append(s)
 
     def find_members(self):
 
@@ -79,16 +90,27 @@ class TClass:
                         if match:
 
                             # we have a property! add it to our members list
-                            self.add_member(TMember(name=match.group(1).strip(), line=index))
+                            self.add_member([TMember(name=match.group(1).strip(), line=index)])
+
                     else:
                         match = method_pattern.match(line.strip())
                         if match:
 
                             # we have a method! add it to members list
-                            self.add_member(TMethod(name=match.group(1).strip(), line=index, arguments=match.group(2)))
+                            self.add_member([TMethod(name=match.group(1).strip(), line=index, arguments=match.group(2))])
             if '*/' in line:
                 within_block_comment = False
             index += 1
+
+
+class TModify(TClass):
+    def __init__(self):
+        TClass.__init__(self)
+
+        # tads class modification
+        self.name = ""
+        self.code = ""
+        self.line = 0
 
 
 class TMember:
@@ -120,6 +142,35 @@ class TMethod(TMember):
             self.arguments = []
 
 
+def objs(code, objects):
+
+    # look for objects, and add custom members
+    for o in objects:
+        snippet = code.split("\n")[o.line + 1:]
+        snippet = '\n'.join(snippet)
+        snippet = clean(snippet)
+        snippet = snippet.replace(";", "\n;\n")
+        snippet = snippet.split("\n")
+        o.extract(snippet)
+        o.find_members()
+
+
+def modify(code, classes):
+
+    # look for 'modify' keyword and retool affected classes
+    code = clean(code)
+
+    # we've got our list of mods!
+    mods = extract_modify(code)
+
+    # go over list of classes and apply modifys
+    for c in classes:
+        for m in mods:
+            if m.name == c.name:
+                c.add_member(m.members)
+    cross_modifys(mods, classes)
+
+
 def extract(code):
 
     # extract a list of classes to return
@@ -144,15 +195,25 @@ def extract(code):
     return classes
 
 
+def cross_modifys(modifys, classes):
+
+    # when given a list of modifys, make sure the inherited classes get their new mods
+    # this is faster than just calling cross ref all the time
+    for m in modifys:
+        for c in classes:
+            if m.name in c.inherits:
+                c.add_member(m.members)
+            else:
+                for i in c.inherits:
+                    for n in classes:
+                        if n.name == i:
+                            c.add_member(m.members)
+
+
 def cross_reference(classes):
 
     # take a list of classes, find their inheritances, and connect applicable once together
-    for c in classes:
-        for i in c.inherits:
-            for c2 in classes:
-                if i == c2.name:
-                    for m in c2.members:
-                        c.add_member(m)
+    [c.add_member(c2.members) for c in classes for i in c.inherits for c2 in classes if i == c2.name]
 
 
 def index_classes(code):
@@ -179,6 +240,33 @@ def index_classes(code):
         index += 1
 
     return classes
+
+
+def extract_modify(code):
+
+    # find all modify expressions and fix classes
+    lines = code.split("\n")
+    result = []
+    index = 0
+
+    # iterate over each line in code
+    for line in lines:
+
+        # use regular expression engine to locate class on line
+        match = modify_pattern.match(line)
+        if match:
+
+            # we have a modify keyword match! get string until ;
+            m = TModify()
+            m.name = match.group(1)
+            m.line = index + 1
+            m.extract(lines[m.line:])
+            m.find_members()
+            result.append(m)
+
+        index += 1
+
+    return result
 
 
 def find_comments(string, position):

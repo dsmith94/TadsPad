@@ -13,7 +13,6 @@
 -o $NAME$.t3
 -pre
 -D LANGUAGE=english
--v
 -w1     
 -Fy obj -Fo obj
 -lib system

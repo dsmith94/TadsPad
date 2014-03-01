@@ -110,7 +110,7 @@ def create_menu_system(top_window):
     find_item = edit_menu.Append(wx.ID_FIND, 'Find and Replace\tCtrl+F', 'Find and Replace Text Strings')
     edit_menu.AppendSeparator()
     theme_item = edit_menu.Append(wx.ID_ANY, 'Text Settings', 'Change Text Size and Color')
-    preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Preferences', 'Preferences')
+    preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Executable Path', 'Locate TADS Compiler and Interpreter')
     top_window.Bind(wx.EVT_MENU, top_window.undo, undo_item)
     top_window.Bind(wx.EVT_MENU, top_window.redo, redo_item)
     top_window.Bind(wx.EVT_MENU, top_window.cut, cut_item)
@@ -134,8 +134,12 @@ def create_menu_system(top_window):
     spell_item = tools_menu.Append(wx.ID_ANY, 'Spell Check\tF7', 'After the Deadline Spell Check')
     top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_item)
     tools_menu.AppendSeparator()
-    play_project_item = tools_menu.Append(wx.ID_ANY, 'Play\tF5', 'Play Current Project')
-    top_window.Bind(wx.EVT_MENU, top_window.play_project, play_project_item)
+    debug_project_item = tools_menu.Append(wx.ID_ANY, 'Compile and Debug\tF5', 'Compile Project for Debugging')
+    full_project_item = tools_menu.Append(wx.ID_ANY, 'Full Compile\tF8', 'Full Recompile for Debugging')
+    release_project_item = tools_menu.Append(wx.ID_ANY, 'Compile for Release\tF9', 'Prepare Project for Final Release')
+    top_window.Bind(wx.EVT_MENU, top_window.debug_project, debug_project_item)
+    top_window.Bind(wx.EVT_MENU, top_window.rebuild_project, full_project_item)
+    top_window.Bind(wx.EVT_MENU, top_window.finalize_project, release_project_item)
 
     # help menu
     help_menu = wx.Menu()
@@ -158,7 +162,9 @@ def create_menu_system(top_window):
     top_window.grayable.append(find_item)
     top_window.grayable.append(view_transcript_item)
     top_window.grayable.append(spell_item)
-    top_window.grayable.append(play_project_item)
+    top_window.grayable.append(debug_project_item)
+    top_window.grayable.append(full_project_item)
+    top_window.grayable.append(release_project_item)
 
     # finalize finished menu
     menu_bar.Append(file_menu, '&File')

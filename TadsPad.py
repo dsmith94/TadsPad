@@ -227,13 +227,26 @@ class MainWindow(wx.Frame):
         self.project_browser.DeleteAllItems()
         self.menus(False)
 
-
-    def play_project(self, event):
+    def debug_project(self, event):
 
         # compile and run current tads story
         # to do this, make a new thread
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"])
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -v -d ')
+
+    def rebuild_project(self, event):
+
+        # compile and rebuild tads project
+        # to do this, make a new thread
+        process = BuildProcess.CompileGame
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -v -d -a ')
+
+    def finalize_project(self, event):
+
+        # compile final version of tads game project
+        # to do this, make a new thread
+        process = BuildProcess.CompileGame
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -a ')
 
     def load_project(self, event):
 
@@ -290,6 +303,13 @@ class MainWindow(wx.Frame):
         # display errors text in message pane
         self.message_book.SetSelection(1)
         self.output_pane.show_output(text)
+        self.message_book.Update()
+
+    def clear_errors(self):
+
+        # clear errors in error panel
+        self.message_book.SetSelection(1)
+        self.output_pane.clear_output()
         self.message_book.Update()
 
     def toggle_messages(self, event):

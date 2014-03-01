@@ -20,6 +20,10 @@ class OutputPane(wx.Panel):
         self.debug_list.DeleteAllItems()
         self.debug_list.process_errors_string(list_of_errors)
 
+    def clear_output(self):
+
+        self.debug_list.DeleteAllItems()
+
 
 class MessagePane(wx.Panel):
 
