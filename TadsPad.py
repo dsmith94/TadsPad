@@ -47,6 +47,7 @@ class MainWindow(wx.Frame):
 
         # build main user interface
         BuildMainUi.init(self)
+        self.Title = "TadsPad"
         self.Bind(wx.EVT_CLOSE, self.on_quit)
 
         # by default, with no project loaded, most menu items are grayed out
@@ -225,6 +226,7 @@ class MainWindow(wx.Frame):
         self.project = None
         self.object_browser.DeleteAllItems()
         self.project_browser.DeleteAllItems()
+        self.Title = "TadsPad"
         self.menus(False)
 
     def debug_project(self, event):
@@ -348,8 +350,10 @@ class MainWindow(wx.Frame):
             get_author = dlg.author.GetValue()
             if dlg.lite.GetValue():
                 get_library = "adv3Lite"
-            else:
+            if dlg.liter.GetValue():
                 get_library = "adv3Liter"
+            if dlg.elite.GetValue():
+                get_library = "adv3Elite"
         dlg.Destroy()
         if get_name != "":
 

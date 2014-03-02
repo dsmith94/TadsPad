@@ -186,6 +186,8 @@ class Notebook(Aui.AuiNotebook):
         tp.editor.scheme.size = self.size
         tp.editor.scheme.load_colors(tp.editor.scheme.colors)
         tp.editor.scheme.update_colors(tp.editor)
+        tp.editor.SetEOLMode(wx.stc.STC_EOL_LF)
+        tp.editor.ConvertEOLs(wx.stc.STC_EOL_LF)
         tp.SetSizerAndFit(sizer)
         sizer.Add(tp.editor, 1, wx.EXPAND | wx.ALL)
         tp.editor.filename = filename
