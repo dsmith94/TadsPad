@@ -213,8 +213,36 @@ def cross_modifys(modifys, classes):
 def cross_reference(classes):
 
     # take a list of classes, find their inheritances, and connect applicable once together
-    [c.add_member(c2.members) for c in classes for i in c.inherits for c2 in classes if i == c2.name]
+    # [c.add_member(c2.members) for c in classes for i in c.inherits for c2 in classes if i == c2.name]
 
+    for c in classes:
+        c.inherits.extend(get_all_inherits(c, classes))
+    for c in classes:
+        get_all_members(c, classes)
+
+
+def get_all_inherits(x, classes):
+
+    # find all the inherits classes for passed class (x) in classes
+    result = []
+    for i in x.inherits:
+        for c in classes:
+            if c.name == i:
+                result.extend(c.inherits)
+                result.extend(get_all_inherits(c, classes))
+    return list(set(result))
+
+
+def get_all_members(class_declaration, classes):
+
+    # recursively return all members from a class declaration as a list
+    for i in class_declaration.inherits:
+        for c in classes:
+            if c.name == i:
+                get_all_members(c, classes)
+                if c.members:
+                    class_declaration.members.extend(c.members)
+                    class_declaration.members = list(set(class_declaration.members))
 
 def index_classes(code):
 
