@@ -69,14 +69,14 @@ class ObjectBrowser(wx.ListCtrl):
             else:
                 if file_contents:
                     master += file_contents
-                    list_of_objects = search_for_objects(file_contents, file_name)
-
-                    # extract members and data from objects
-                    TClass.objs(file_contents, list_of_objects)
-                    for o in list_of_objects:
+                    objects = TClass.search(file_contents, "object", file_name)
+                    for o in objects:
 
                         # add object to our master object list
                         self.notebook.objects.append(o)
+
+                        # update members in objects
+                        TClass.get_all_members(o, self.notebook.classes)
 
         # and update the columns in the catalog
         self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))
@@ -91,42 +91,6 @@ class ObjectBrowser(wx.ListCtrl):
             self.SetStringItem(index, 1, str(o.file))
             self.SetStringItem(index, 2, str(o.line))
             index += 1
-
-
-def search_for_objects(code, file_name):
-
-    # search all the code provided and build an updated object dictionary
-
-    # get a list of lines representing the code
-    objects_list = []
-    lines = code.split("\n")
-    line_number = 0
-    for line in lines:
-        object_definition_search = None
-        if len(line) > 0:
-            if line[0] != " ":
-                object_definition_search = re.search(object_looks_like, line)
-        if object_definition_search:
-
-            # we have an object definition, add to our list with the line number file and classes
-            if object_definition_search.start(0) == 0:
-                object_definition = object_definition_search.group(0).strip(":").strip("+").strip("\n").strip()
-                if object_definition != "":
-                    o = TClass.TClass()
-                    o.name = object_definition
-                    o.line = line_number
-                    o.file = file_name
-                    search_for_classes = re.search(classes_look_like, line)
-                    if search_for_classes:
-                        classes = search_for_classes.group().strip(":").split(",")
-                        for c in classes:
-                            o.inherits.append(c.strip("\n").strip(" "))
-                    objects_list.append(o)
-
-        line_number += 1
-
-    # return finished list
-    return objects_list
 
 
 

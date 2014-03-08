@@ -3,7 +3,7 @@
 
 import wx
 import wx.stc
-import sys
+import TClass
 import re
 import atd
 import SpellCheckerWindow
@@ -12,9 +12,17 @@ import os
 import xml.etree.ElementTree as ET
 
 # english defaults for verify, check
-verify_token = "verify"
-check_token = "check"
-action_token = "action"
+verify_token = u"verify"
+check_token = u"check"
+action_token = u"action"
+direct_token = u"dobjFor"
+indirect_token = u"iobjFor"
+remap_direct_token = u"asDobjFor"
+remap_indirect_token = u"asIobjFor"
+inObj_suggestions = "preCond", verify_token + "()", check_token + "()", action_token + "()"
+verify_suggestions = ("logicalRank(rank, key);", "dangerous", "illogicalNow(msg, params);", "illogical(msg, params);",
+                      "illogicalSelf(msg, params);", "nonObvious", "inaccessible(msg, params);")
+
 
 # pre-compile and cache regular expression patterns for use later
 pattern_line_comments = re.compile("//.*")
@@ -25,6 +33,15 @@ pattern_escape_quotes = re.compile(r"\\'", flags=re.S)
 pattern_enclosure = re.compile("\n\s*\{")
 pattern_object = re.compile("\+*\s*([a-zA-Z]*):")
 pattern_classes = re.compile(": ([\w*|,|\s])*")
+
+# code analysis filter system
+# use these presets to analyze a block of code for suggestions
+analyzer = (verify_token, verify_suggestions, {'objects': None, 'self': None}), \
+           (action_token, None, {'objects': None, 'self': None}), \
+           (check_token, None, {'objects': None, 'self': None}), \
+           (direct_token, inObj_suggestions, {}), \
+           (indirect_token, inObj_suggestions, {}), \
+           (remap_direct_token, None, {'self': None, 'filter': [direct_token, indirect_token], 'prefix': 'as'})
 
 
 class ColorSchemer:
@@ -291,80 +308,60 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def build_suggestions(self, code):
 
         # build suggestions from the code passed above
-        lines = code.split("\n")
-        enclosures = in_enclosure(lines)
-        in_verify = verify_token in enclosures
-        in_check = check_token in enclosures
-        in_action = action_token in enclosures
-        in_dobj = "dobjFor" in enclosures
-        in_iobj = "iobjFor" in enclosures
-
-        # with some context info collected, build a list of library info
         results = []
-        if in_dobj or in_iobj:
-            if not in_verify and not in_check and not in_action:
-                return '^'.join(["preCond", verify_token + "()", check_token + "()", action_token + "()"])
-            if in_verify:
-                results.extend(["logicalRank(rank, key);", "dangerous", "illogicalNow(msg, params);",
-                                "illogical(msg, params);", "illogicalSelf(msg, params);", "nonObvious",
-                                "inaccessible(msg, params);"])
-        inherits = find_object(lines, self.notebook.objects)
-        if inherits:
-            check_on_line = self.get_line_suggestions(lines[-2], inherits)
-            if check_on_line is not None:
-                return check_on_line
-            results.extend([x.name for i in inherits for c in self.classes if i == c.name for x in c.members])
-            object_reference = find_object_reference(lines[-2], self.notebook.objects)
-            if object_reference:
-                results.extend([x.name for x in object_reference.members])
-        else:
-            # we're not editing an object, so provide the verb creation options if no indent is set
-            if self.GetLineIndentation(self.GetCurrentLine()) == 0:
-                return self.handle_not_in_object()
+        full_line, caret = self.GetCurLine()
+        objects = TClass.search(self.Text, 'object')
+        context = search(code, full_line[:caret])
+        block = None
+        line_number = self.GetCurrentLine()
+        for o in objects:
+            TClass.get_all_members(o, self.notebook.classes)
+            if line_number in range(o.line, o.end):
+                block = o
+                break
 
-        # provide names of other objects in game
-        results.extend([o.name for o in self.notebook.objects])
+        # analyze code based on present block and line
+        for enclosure, suggestions, flags in analyzer:
+            if enclosure in context:
+                if suggestions:
+                    results.extend(suggestions)
+                if 'objects' in flags:
+                    results.extend([o.name for o in self.notebook.objects])
+                if 'self' in flags:
+                    if block:
+                        results.extend([m.name for m in block.members])
+                if 'filter' in flags:
+                    results = [r for f in flags['filter'] for r in results if f in r]
+                if 'prefix' in flags:
+                    results = [flags['prefix'] + r.title() for r in results]
+
+        # still no results, figure out if we're in a object template
+        if not results:
+            if block:
+                results.extend([m.name for m in block.members])
+                results.extend([o.name for o in self.notebook.objects])
+
+            # check if we're looking at class inheritances ':' notation
+            if ':' in full_line[:caret]:
+                results = [c.name for c in self.classes]
+
+            # check if we're looking at object parentage '@' notation
+            if '@' in full_line[:caret]:
+                results = [o.name for o in self.notebook.objects]
+
+        # check if we're looking at members of another object (object.member) notation
+        if '.' in full_line[:caret]:
+            tokens = re.split('[{0}]'.format(re.escape(" [](){};")), full_line[:caret])
+            the_object = tokens[-1].split(".")[0]
+            if the_object:
+                results = [m.name for o in self.notebook.objects if o.name == the_object for m in o.members
+                           if m.type != "method"]
 
         # finalize for return
         results = list(set(results))
         results = filter_suggestions(self.get_word(), results)
         results.sort()
         return '^'.join(results)
-
-    def get_line_suggestions(self, line, inherits):
-
-        # recommend remap options for dobj and iobj
-        return_list = []
-        if "dobj" in line:
-            for c in self.classes:
-                for i in inherits:
-                    if c.name == i:
-                        for m in c.members:
-                            if "asDobjFor" in m.name:
-                                return_list.append(m.name)
-        if "iobjFor" in line:
-            for c in self.classes:
-                for i in inherits:
-                    if c.name == i:
-                        for m in c.members:
-                            if "asIobjFor" in m.name:
-                                return_list.append(m.name)
-        if ":" in line:
-            if self.GetLineIndentation(self.GetCurrentLine()) == 0:
-                # we're probably editing an object, provide object inheritance suggestions
-                for c in self.classes:
-                    return_list.append(c.name)
-        return_list = list(set(return_list))
-        if len(return_list) < 1:
-            return None
-        else:
-            return_string = ""
-            return_list = list(set(return_list))
-            return_list = filter_suggestions(self.get_word(), return_list)
-            return_list.sort()
-            for entry in return_list:
-                return_string += entry + "^"
-            return return_string
 
     def get_word(self):
 
@@ -375,7 +372,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         for char_index in xrange(anchor_position, 1, -1):
             char = self.Text[char_index]
             if word_boundary(char):
-                return self.Text[char_index + 1:anchor_position + 1].strip(".").strip()
+                return self.Text[char_index + 1:anchor_position + 1].strip(".").strip("@").strip()
         return ""
 
     def call_context_help(self, event):
@@ -384,29 +381,37 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # start by getting the full word the caret is on top of
         search_string = self.get_full_word()
-        for c in self.classes:
+        for c in self.notebook.classes:
             if search_string == c.name:
                 MessageSystem.show_message(c.name + ": " + c.help)
                 return
-
-        # what else is the caret near? find object and classes
-        code = self.Text[0:self.GetAnchor() - 1]
-        code = clean_string(code)
-        lines = code.split('\n')
-        inherits = find_object(lines, self.notebook.objects)
 
         # search for help in classes matching the search string
         member = prep_member(search_string)
         if 'objFor' in member:
             MessageSystem.show_message("Action handling with: " + member)
             return
-        if inherits:
-            for i in inherits:
-                for c in self.classes:
-                    if c.name == i:
-                        for m in c.members:
+
+        # search current line for help data
+        full_line, caret = self.GetCurLine()
+        if '.' in full_line[:caret]:
+            tokens = re.split('[{0}]'.format(re.escape(" [](){};")), full_line[:caret])
+            the_object = tokens[-1].split(".")[0]
+            if the_object:
+                for o in self.notebook.objects:
+                    if o.name == the_object:
+                        for m in o.members:
                             if member == prep_member(m.name):
                                 MessageSystem.show_message(m.name + ": " + m.help)
+
+        # now search currently edited object
+        line_number = self.GetCurrentLine()
+        for o in self.notebook.objects:
+            if line_number in range(o.line, o.end):
+                for m in o.members:
+                    if member == prep_member(m.name):
+                        MessageSystem.show_message(m.name + ": " + m.help)
+                        break
 
     def get_full_word(self):
 
@@ -606,54 +611,6 @@ def clean_string(code):
     return removed_strings
 
 
-def find_object_reference(line, object_list):
-
-    # find obj reference on the line we're editing
-    tokens = re.split('[{0}]'.format(re.escape(" [](){};")), line)
-    the_object = tokens[-1].split(".")[0]
-    if the_object:
-        for o in object_list:
-            if o.name == the_object:
-                return o
-    return None
-
-
-def find_object(lines, object_list):
-
-    # return the present mixins of the object we're editing, else return none
-
-    # first - if we're on top of an object reference (ex: object.property) return those classes instead of the
-    # master reference here
-    top_line = lines[-2]
-    if "." in top_line:
-        object_reference = find_object_reference(top_line, object_list)
-        if object_reference:
-            return_value = []
-            for c in object_reference.inherits:
-                return_value.append(c)
-            if len(return_value) > 0:
-                return return_value
-            else:
-                return None
-
-    for line in lines:
-
-        obj = pattern_object.search(line)
-        if obj:
-            classes = pattern_classes.search(line)
-            if classes:
-                string_of_classes = classes.group()
-                string_of_classes = string_of_classes.strip(":")
-                list_of_classes = string_of_classes.split(",")
-                if list_of_classes is not None:
-                    return_value = []
-                    for c in list_of_classes:
-                        return_value.append(c.strip())
-                    return return_value
-
-    return None
-
-
 def prep_member(member):
 
     # prepare member passed above for help system comparison
@@ -668,20 +625,15 @@ def prep_member(member):
     return return_value
 
 
-def in_enclosure(lines):
+def search(code, line):
 
-    # check if we're in enclosures marked by each token in "args"
-    # verify return value with syntax: if "token" in "return_value": then do this
-    tokens = action_token, check_token, verify_token, "dobjFor", "iobjFor"
-    return_value = ""
-    for line in lines:
-        for token in tokens:
-            if token in line:
-                if token is "dobjFor" or token is "iobjFor":
-                    if "asDobjFor" not in line and "asIobjFor" not in line:
-                        return_value = return_value + token + " "
-                else:
-                    return_value = return_value + token + " "
-    return return_value
+    # scan current code for possible enclosures we're in
+    # look first in current line, then in all code
+    remaps = [t for t in [direct_token, indirect_token] if t in line]
+    if remaps:
+        return [remap_direct_token]
+    tokens = verify_token, action_token, check_token, direct_token, indirect_token
+    return [t for t in tokens if t in code]
+
 
 __author__ = 'dj'

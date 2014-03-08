@@ -8,7 +8,7 @@ import re
 
 # regular expression patterns
 class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)", flags=re.S)
-object_pattern = re.compile("(\w*):\s([\w|,|\s]*)")
+object_pattern = re.compile("\n(\+*\s*)(\w*):\s([\w|,|\s]*)\s(.*)\n")
 block_comments = re.compile("/\*.*?\*/", flags=re.S)
 method_pattern = re.compile("(\w*\((\w*)\))")
 property_pattern = re.compile("(\w*)\s=")
@@ -24,21 +24,22 @@ class TClass:
         self.code = ""
         self.help = ""
         self.line = 0
+        self.end = 0
         self.file = ""
+        self.pluses = 0
+        self.parent = ""
         self.inherits = []
         self.members = []
 
     def __repr__(self):
         return repr((self.name, self.file, self.line, self.inherits))
 
-    def extract(self, code):
+    def extract(self, code, start=0):
 
         # extract code for this modify
-        for line in code:
-            if line == ";":
-                return
-            else:
-                self.code += line + '\n'
+        # start at the index passed as "start"
+        end = code.find("\n;\n", start)
+        self.code = code[start:end]
 
     def get_code_from_string(self, string):
 
@@ -47,7 +48,7 @@ class TClass:
         index = 0
         for line in lines:
             if index > self.line:
-                if line is ';':
+                if line == ';':
                     break
                 self.code = self.code + line + '\n'
             index += 1
@@ -103,16 +104,6 @@ class TClass:
             index += 1
 
 
-class TModify(TClass):
-    def __init__(self):
-        TClass.__init__(self)
-
-        # tads class modification
-        self.name = ""
-        self.code = ""
-        self.line = 0
-
-
 class TMember:
     def __init__(self, name, line):
 
@@ -142,17 +133,71 @@ class TMethod(TMember):
             self.arguments = []
 
 
-def objs(code, objects):
+def search(code, pattern, filename=None):
 
-    # look for objects, and add custom members
-    for o in objects:
-        snippet = code.split("\n")[o.line + 1:]
-        snippet = '\n'.join(snippet)
-        snippet = clean(snippet)
-        snippet = snippet.replace(";", "\n;\n")
-        snippet = snippet.split("\n")
-        o.extract(snippet)
-        o.find_members()
+    # search for definitions in code
+    # when we find a definition, collect the line and classes it inherits and members
+    name = 1
+    inherits = 2
+    if pattern == "class":
+        pattern = class_pattern
+    if pattern == "object":
+        pattern = object_pattern
+        pluses = 1
+        name = 2
+        inherits = 3
+        parent = 4
+    if pattern == "modify":
+        pattern = modify_pattern
+        inherits = None
+    objects = pattern.finditer(code)
+    result = []
+
+    # search for objects
+    for m in objects:
+
+        # found an object definition
+        # muwahahahahaha
+        if m:
+            obj = TClass()
+            obj.name = m.group(name)
+            if filename:
+                obj.file = filename
+            if inherits:
+                obj.inherits = inherited(m.group(inherits))
+            if pluses:
+                obj.pluses = len(m.group(pluses).strip())
+            if parent:
+                if '@' in m.group(parent):
+                    obj.parent = m.group(parent)
+                    obj.parent = obj.parent[obj.parent.find('@') + 1:].strip()
+            obj.line = code.count("\n", 0, m.start()) + 1
+            obj.extract(code, m.start())
+            obj.end = obj.line + obj.code.count("\n") + 1
+            obj.code = clean(obj.code)
+            obj.find_members()
+            result.append(obj)
+
+    # if we did a search for pluses, handle object-parent pluses notation search
+    find_parents(result)
+
+    # we're done!
+    return result
+
+
+def find_parents(objects):
+
+    # find the parents to a list of object from a set of pluses
+    for index, o in enumerate(objects):
+
+        # the parent is always the next object up with fewer pluses
+        if o.pluses:
+            for x in reversed(objects[:index]):
+                if x.pluses < o.pluses:
+                    o.parent = x.name
+                    break
+
+    return objects
 
 
 def modify(code, classes):
@@ -161,7 +206,7 @@ def modify(code, classes):
     code = clean(code)
 
     # we've got our list of mods!
-    mods = extract_modify(code)
+    mods = search(code, "modify")
 
     # go over list of classes and apply modifys
     for c in classes:
@@ -180,7 +225,7 @@ def extract(code):
     code = clean(code)
 
     # stage 2: find classes by line numbers
-    classes = index_classes(code)
+    classes = search(code, "class")
 
     # stage 3: populate documentation by extracting comments, and get code
     for c in classes:
@@ -268,33 +313,6 @@ def index_classes(code):
         index += 1
 
     return classes
-
-
-def extract_modify(code):
-
-    # find all modify expressions and fix classes
-    lines = code.split("\n")
-    result = []
-    index = 0
-
-    # iterate over each line in code
-    for line in lines:
-
-        # use regular expression engine to locate class on line
-        match = modify_pattern.match(line)
-        if match:
-
-            # we have a modify keyword match! get string until ;
-            m = TModify()
-            m.name = match.group(1)
-            m.line = index + 1
-            m.extract(lines[m.line:])
-            m.find_members()
-            result.append(m)
-
-        index += 1
-
-    return result
 
 
 def find_comments(string, position):
