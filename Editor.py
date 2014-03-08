@@ -192,41 +192,40 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         position = self.GetAnchor()
 
         # for when we insert anything ending in the word "Desc" add double quotes
-        if selection[-4:] == "Desc":
-            self.InsertText(position, " = \"\"")
+        if selection[-4:] == u"Desc":
+            self.InsertText(position, u" = \"\"")
 
         # for when we insert anything ending in the word "Msg" add single quotes
-        if selection[-3:] == "Msg":
-            self.InsertText(position, " = \'\'")
+        if selection[-3:] == u"Msg":
+            self.InsertText(position, u" = \'\'")
 
         # regions
-        if selection == "regions":
-            self.InsertText(position, " = [  ]")
+        if selection == u"regions":
+            self.InsertText(position, u" = [  ]")
 
         # for define indirect action
-        if "DefineIAction" in selection:
+        if u"DefineIAction" in selection:
 
-            self.InsertText(position, self.insert_indent(1) + "execAction(cmd)" + self.insert_indent(1) +
-                            "{" + self.insert_indent(2) + "\"{You} can't do that now. \";" +
-                            self.insert_indent(1) + "}" + self.insert_indent(0) + ";")
+            self.InsertText(position, self.insert_indent(1) + u"execAction(cmd)" + self.insert_indent(1) +
+                            u"{" + self.insert_indent(2) + u"\"{You} can't do that now. \";" +
+                            self.insert_indent(1) + u"}" + self.insert_indent(0) + ";")
 
         # for T action
-        if "DefineTAction" in selection:
+        if u"DefineTAction" in selection:
             self.InsertText(position, self.insert_indent(0) + ";")
 
         # for TI action
-        if "DefineTIAction" in selection:
+        if u"DefineTIAction" in selection:
             self.InsertText(position, self.insert_indent(0) + ";")
 
         # for new verb rules
-        if "VerbRule" in selection:
-
-            self.InsertText(position, self.insert_indent(1) + "'verb'"
-                            + self.insert_indent(1) + ": VerbProduction"
-                            + self.insert_indent(1) + "action = Verb"
-                            + self.insert_indent(1) + "verbPhrase = 'verb/verbing'"
-                            + self.insert_indent(1) + "missingQ = 'what do you want to verb'"
-                            + self.insert_indent(0) + ";")
+        if u"VerbRule" in selection:
+            self.InsertText(position, self.insert_indent(1) + u"'verb'"
+                            + self.insert_indent(1) + u": VerbProduction"
+                            + self.insert_indent(1) + u"action = Verb"
+                            + self.insert_indent(1) + u"verbPhrase = 'verb/verbing'"
+                            + self.insert_indent(1) + u"missingQ = 'what do you want to verb'"
+                            + self.insert_indent(0) + u";")
 
     def insert_indent(self, level):
 
