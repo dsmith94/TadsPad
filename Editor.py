@@ -39,9 +39,14 @@ pattern_classes = re.compile(": ([\w*|,|\s])*")
 analyzer = (verify_token, verify_suggestions, {'objects': None, 'self': None}), \
            (action_token, None, {'objects': None, 'self': None}), \
            (check_token, None, {'objects': None, 'self': None}), \
+           (".", None, {'members': None}), (":", None, {'classes': None}), \
+           ('@', None, {'objects': None}), \
            (direct_token, inObj_suggestions, {}), \
            (indirect_token, inObj_suggestions, {}), \
            (remap_direct_token, None, {'self': None, 'filter': [direct_token, indirect_token], 'prefix': 'as'})
+
+# defaults when editing outside a template
+outside_template = u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class"
 
 
 class ColorSchemer:
@@ -117,7 +122,7 @@ class ColorSchemer:
 
 class EditorCtrl(wx.stc.StyledTextCtrl):
 
-    def __init__(self, tads_classes, parent, notebook, style=wx.SIMPLE_BORDER):
+    def __init__(self, parent, notebook, style=wx.SIMPLE_BORDER):
 
         ## Constructor
         wx.stc.StyledTextCtrl.__init__(self, parent=parent, style=style)
@@ -127,7 +132,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.path = ""
 
         # context sensitive help reference
-        self.classes = tads_classes
         self.Bind(wx.stc.EVT_STC_UPDATEUI, self.call_context_help)
 
         # autoindent system
@@ -267,16 +271,25 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.SetCurrentPos(self.GetLineIndentPosition(line))
         self.SetAnchor(self.GetLineIndentPosition(line))
 
-    def handle_not_in_object(self):
+    def find_object_methods(self, line):
 
-        # when our cursor is not in an object, add a small subset of suggestions
-        defaults = "DefineIAction(Verb)", "DefineTAction(Verb)", "DefineTIAction(Verb)", "VerbRule(Verb)", "class"
-        current_word = self.get_full_word()
-        return_value = ""
-        for word in defaults:
-            if current_word in word:
-                return_value += word + "^"
-        return return_value
+        # find object on a single line
+        # return methods
+        tokens = re.split('[{0}]'.format(re.escape(" [](){};")), line)
+        obj = tokens[-1].split(".")[0]
+        if obj:
+            return [m.name for o in self.notebook.objects if o.name == obj for m in o.members if m.type != "method"]
+
+    def find_object_template(self):
+
+        # determine if caret is presently editing an object template
+        # return object reference if true, None if false
+        line_number = self.GetCurrentLine()
+        objects = TClass.search(self.Text, 'object')
+        for o in objects:
+            TClass.get_all_members(o, self.notebook.classes)
+            if line_number in range(o.line, o.end):
+                return o
 
     def auto_complete(self):
 
@@ -287,7 +300,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         code = self.Text[0:self.GetAnchor() - 1]
         code = clean_string(code)
 
-        # stage 2: take the processed code (now a list, divided into lines and backwards) and find
+        # stage 2: take the processed code and find
         # the classes of the object we're editing, plus the present enclosures
         suggestions = self.build_suggestions(code)
 
@@ -309,26 +322,25 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # build suggestions from the code passed above
         results = []
         full_line, caret = self.GetCurLine()
-        objects = TClass.search(self.Text, 'object')
         context = search(code, full_line[:caret])
-        block = None
-        line_number = self.GetCurrentLine()
-        for o in objects:
-            TClass.get_all_members(o, self.notebook.classes)
-            if line_number in range(o.line, o.end):
-                block = o
-                break
+        template = self.find_object_template()
 
-        # analyze code based on present block and line
+        # analyze code based on present template and line in context
         for enclosure, suggestions, flags in analyzer:
             if enclosure in context:
                 if suggestions:
                     results.extend(suggestions)
+                if 'classes' in flags:
+                    results = [c.name for c in self.notebook.classes]
+                if 'members' in flags:
+                    members = self.find_object_methods(full_line[:caret])
+                    if members:
+                        results = members
                 if 'objects' in flags:
                     results.extend([o.name for o in self.notebook.objects])
                 if 'self' in flags:
-                    if block:
-                        results.extend([m.name for m in block.members])
+                    if template:
+                        results.extend([m.name for m in template.members])
                 if 'filter' in flags:
                     results = [r for f in flags['filter'] for r in results if f in r]
                 if 'prefix' in flags:
@@ -336,25 +348,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # still no results, figure out if we're in a object template
         if not results:
-            if block:
-                results.extend([m.name for m in block.members])
+            if template:
+                results.extend([m.name for m in template.members])
                 results.extend([o.name for o in self.notebook.objects])
-
-            # check if we're looking at class inheritances ':' notation
-            if ':' in full_line[:caret]:
-                results = [c.name for c in self.classes]
-
-            # check if we're looking at object parentage '@' notation
-            if '@' in full_line[:caret]:
-                results = [o.name for o in self.notebook.objects]
-
-        # check if we're looking at members of another object (object.member) notation
-        if '.' in full_line[:caret]:
-            tokens = re.split('[{0}]'.format(re.escape(" [](){};")), full_line[:caret])
-            the_object = tokens[-1].split(".")[0]
-            if the_object:
-                results = [m.name for o in self.notebook.objects if o.name == the_object for m in o.members
-                           if m.type != "method"]
+            else:
+                results = outside_template
 
         # finalize for return
         results = list(set(results))
@@ -397,11 +395,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             tokens = re.split('[{0}]'.format(re.escape(" [](){};")), full_line[:caret])
             the_object = tokens[-1].split(".")[0]
             if the_object:
-                for o in self.notebook.objects:
-                    if o.name == the_object:
-                        for m in o.members:
-                            if member == prep_member(m.name):
-                                MessageSystem.show_message(m.name + ": " + m.help)
+                match = filter(lambda x: x.name == the_object, self.notebook.objects)
+                [MessageSystem.show_message(m.name + ": " + m.help) for m in match.members if member == prep_member(m.name)]
 
         # now search currently edited object
         line_number = self.GetCurrentLine()
@@ -628,6 +623,13 @@ def search(code, line):
 
     # scan current code for possible enclosures we're in
     # look first in current line, then in all code
+    # the order here is important, by the way
+    if '@' in line:
+        return '@'
+    if ':' in line:
+        return ':'
+    if '.' in line:
+        return '.'
     remaps = [t for t in [direct_token, indirect_token] if t in line]
     if remaps:
         return [remap_direct_token]

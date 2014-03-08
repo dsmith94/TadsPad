@@ -181,7 +181,7 @@ class Notebook(Aui.AuiNotebook):
         # load page with filename passed above
         tp = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        tp.editor = Editor.EditorCtrl(self.classes, tp, self)
+        tp.editor = Editor.EditorCtrl(tp, self)
         tp.editor.scheme.colors = self.colors
         tp.editor.scheme.size = self.size
         tp.editor.scheme.load_colors(tp.editor.scheme.colors)
