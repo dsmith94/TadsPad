@@ -7,8 +7,8 @@
 import re
 
 # regular expression patterns
-class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)", flags=re.S)
-object_pattern = re.compile("\n(\+*\s*)(\w*):\s([\w|,|\s]*)\s(.*)\n")
+class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)\n", flags=re.S)
+object_pattern = re.compile("(\+*\s)(\w*):[\s]([\w|,|\s]*)\s(.*)\n")
 block_comments = re.compile("/\*.*?\*/", flags=re.S)
 method_pattern = re.compile("(\w*\((\w*)\))")
 property_pattern = re.compile("(\w*)\s=")
@@ -139,6 +139,8 @@ def search(code, pattern, filename=None):
     # when we find a definition, collect the line and classes it inherits and members
     name = 1
     inherits = 2
+    pluses = None
+    parent = None
     if pattern == "class":
         pattern = class_pattern
     if pattern == "object":
@@ -151,7 +153,8 @@ def search(code, pattern, filename=None):
         pattern = modify_pattern
         inherits = None
     objects = pattern.finditer(code)
-    result = []
+    result = {}
+    ordered = []
 
     # search for objects
     for m in objects:
@@ -163,23 +166,24 @@ def search(code, pattern, filename=None):
             obj.name = m.group(name)
             if filename:
                 obj.file = filename
-            if inherits:
-                obj.inherits = inherited(m.group(inherits))
+            #if inherits:
+            #    obj.inherits = inherited(m.group(inherits))
             if pluses:
                 obj.pluses = len(m.group(pluses).strip())
             if parent:
                 if '@' in m.group(parent):
                     obj.parent = m.group(parent)
                     obj.parent = obj.parent[obj.parent.find('@') + 1:].strip()
-            obj.line = code.count("\n", 0, m.start()) + 1
+            obj.line = code.count("\n", 1, m.start()) + 1
             obj.extract(code, m.start())
             obj.end = obj.line + obj.code.count("\n") + 1
             obj.code = clean(obj.code)
             obj.find_members()
-            result.append(obj)
+            ordered.append(obj)
+            result[m.group(name)] = obj
 
     # if we did a search for pluses, handle object-parent pluses notation search
-    find_parents(result)
+    find_parents(ordered)
 
     # we're done!
     return result
@@ -209,10 +213,9 @@ def modify(code, classes):
     mods = search(code, "modify")
 
     # go over list of classes and apply modifys
-    for c in classes:
-        for m in mods:
-            if m.name == c.name:
-                c.add_member(m.members)
+    for m in mods:
+        if m.name in classes:
+            classes[m.name].add_member(m.members)
     cross_modifys(mods, classes)
 
 
@@ -228,7 +231,7 @@ def extract(code):
     classes = search(code, "class")
 
     # stage 3: populate documentation by extracting comments, and get code
-    for c in classes:
+    for c in classes.values():
         c.help = find_comments(code, c.line)
         c.get_code_from_string(code)
         c.find_members()
@@ -245,14 +248,13 @@ def cross_modifys(modifys, classes):
     # when given a list of modifys, make sure the inherited classes get their new mods
     # this is faster than just calling cross ref all the time
     for m in modifys:
-        for c in classes:
+        for c in classes.values():
             if m.name in c.inherits:
                 c.add_member(m.members)
             else:
                 for i in c.inherits:
-                    for n in classes:
-                        if n.name == i:
-                            c.add_member(m.members)
+                    if i in classes:
+                        classes[i].add_member(m.members)
 
 
 def cross_reference(classes):
@@ -260,9 +262,9 @@ def cross_reference(classes):
     # take a list of classes, find their inheritances, and connect applicable once together
     # [c.add_member(c2.members) for c in classes for i in c.inherits for c2 in classes if i == c2.name]
 
-    for c in classes:
+    for c in classes.values():
         c.inherits.extend(get_all_inherits(c, classes))
-    for c in classes:
+    for c in classes.keys():
         get_all_members(c, classes)
 
 
@@ -271,48 +273,22 @@ def get_all_inherits(x, classes):
     # find all the inherits classes for passed class (x) in classes
     result = []
     for i in x.inherits:
-        for c in classes:
-            if c.name == i:
-                result.extend(c.inherits)
-                result.extend(get_all_inherits(c, classes))
+        if i in classes:
+            result.extend(i)
+            result.extend(get_all_inherits(classes[i], classes))
     return list(set(result))
 
 
 def get_all_members(class_declaration, classes):
 
     # recursively return all members from a class declaration as a list
-    for i in class_declaration.inherits:
-        for c in classes:
-            if c.name == i:
-                get_all_members(c, classes)
-                if c.members:
-                    class_declaration.members.extend(c.members)
-                    class_declaration.members = list(set(class_declaration.members))
-
-def index_classes(code):
-
-    # stuff the classes objects with names and line numbers
-    classes = []
-    lines = code.split("\n")
-    index = 0
-
-    # iterate over each line in code
-    for line in lines:
-
-        # use regular expression engine to locate class on line
-        match = class_pattern.match(line)
-        if match:
-
-            # we have a class here! save the index and name and subclasses
-            c = TClass()
-            c.line = index
-            c.name = match.group(1)
-            c.inherits = inherited(match.group(2))
-            classes.append(c)
-
-        index += 1
-
-    return classes
+    if class_declaration in classes:
+        for i in classes[class_declaration].inherits:
+            if i in classes:
+                get_all_members(i, classes)
+                if classes[i].members:
+                    classes[class_declaration].members.extend(classes[i].members)
+                    classes[class_declaration].members = list(set(classes[class_declaration].members))
 
 
 def find_comments(string, position):

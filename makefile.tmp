@@ -16,7 +16,7 @@
 -w1     
 -Fy obj -Fo obj
 -lib system
--lib ../extensions/adv3Lite/$LIBRARY$
+$LIBRARY$
 
 
 ##sources

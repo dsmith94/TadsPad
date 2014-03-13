@@ -285,9 +285,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # determine if caret is presently editing an object template
         # return object reference if true, None if false
         line_number = self.GetCurrentLine()
-        objects = TClass.search(self.Text, 'object')
+        objects = TClass.search(self.Text, 'object').values()
         for o in objects:
-            TClass.get_all_members(o, self.notebook.classes)
+            TClass.get_all_members(o.name, self.notebook.classes)
             if line_number in range(o.line, o.end):
                 return o
 
@@ -324,14 +324,14 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         full_line, caret = self.GetCurLine()
         context = search(code, full_line[:caret])
         template = self.find_object_template()
-
+        print([g for g in self.notebook.classes['Room'].inherits])
         # analyze code based on present template and line in context
         for enclosure, suggestions, flags in analyzer:
             if enclosure in context:
                 if suggestions:
                     results.extend(suggestions)
                 if 'classes' in flags:
-                    results = [c.name for c in self.notebook.classes]
+                    results = self.notebook.classes.keys()
                 if 'members' in flags:
                     members = self.find_object_methods(full_line[:caret])
                     if members:
@@ -376,9 +376,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # get context sensitive help
 
+        # print [m.name for m in self.notebook.classes["OutdoorRoom"].members]
+
         # start by getting the full word the caret is on top of
         search_string = self.get_full_word()
-        for c in self.notebook.classes:
+        for c in self.notebook.classes.values():
             if search_string == c.name:
                 MessageSystem.show_message(c.name + ": " + c.help)
                 return
@@ -396,7 +398,10 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             the_object = tokens[-1].split(".")[0]
             if the_object:
                 match = filter(lambda x: x.name == the_object, self.notebook.objects)
-                [MessageSystem.show_message(m.name + ": " + m.help) for m in match.members if member == prep_member(m.name)]
+                if match:
+                    if match.members:
+                        [MessageSystem.show_message(m.name + ": " + m.help) for m in match.members
+                         if member == prep_member(m.name)]
 
         # now search currently edited object
         line_number = self.GetCurrentLine()

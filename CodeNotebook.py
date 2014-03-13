@@ -32,7 +32,7 @@ class Notebook(Aui.AuiNotebook):
 
         # the objects and classes
         self.objects = list()
-        self.classes = []
+        self.classes = {}
 
     def __getitem__(self, index):
         if index < self.GetPageCount():
@@ -42,7 +42,7 @@ class Notebook(Aui.AuiNotebook):
 
     def load_classes(self, project):
 
-        # load adv3lite worldmodel classes from file
+        # load adv3lite/r worldmodel classes from file
         root = ProjectFileSystem.get_project_root()
         path = os.path.join(root, project.name)
         if os.path.exists(os.path.join(path, "classes.dat")):
@@ -57,7 +57,8 @@ class Notebook(Aui.AuiNotebook):
             return
 
         # no previous classes: load them
-        self.classes = parse_library(project.library)
+        for l in project.libraries:
+            self.classes.update(parse_library(l, path))
 
         # now that the heavy lifting is done, save the classes to file
         if not os.path.exists(path):
@@ -315,13 +316,18 @@ class Notebook(Aui.AuiNotebook):
             page.editor.scheme.update_colors(page.editor)
 
 
-def parse_library(library):
+def parse_library(library, current_path):
 
     # parse all classes/members in the presently selected world-model library
-    path_string = os.path.expanduser('~/Documents/TADS 3/extensions/adv3Lite')
-    sources_file = open(os.path.join(path_string, library + ".tl"), 'rU')
-    sources_raw = sources_file.read()
-    sources_file.close()
+    sources_path = os.path.join(ProjectFileSystem.get_project_root(), 'extensions', 'adv3Lite')
+    try:
+        sources_file = open(os.path.join(current_path, library + ".tl"), 'rU')
+        sources_raw = sources_file.read()
+        sources_file.close()
+    except:
+        MessageSystem.error("Could not load library source: file corrupted or not found",
+                            "Library Read Error for " + library)
+        return {}
     lines = sources_raw.split('\n')
     source_pattern = re.compile("source:\s(.*)")
     sources = []
@@ -330,17 +336,19 @@ def parse_library(library):
     for line in lines:
         match = source_pattern.match(line)
         if match:
-            sources.append(match.group(1))
-            number_of_sources += 1
+            # ignore system.tl, we don't need it
+            if match.group(1) != "system":
+                sources.append(match.group(1))
+                number_of_sources += 1
 
-    classes = []
+    classes = {}
     load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
     for source in sources:
-        code_file = open(os.path.join(path_string, source + ".t"), 'rU')
+        code_file = open(os.path.join(sources_path, source + ".t"), 'rU')
         load_dlg.Update(sources_index, source + ".t")
         code = code_file.read()
         code_file.close()
-        classes.extend(TClass.extract(code))
+        classes.update(TClass.extract(code))
         sources_index += 1
     TClass.cross_reference(classes)
     load_dlg.Destroy()

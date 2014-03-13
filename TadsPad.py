@@ -184,7 +184,6 @@ class MainWindow(wx.Frame):
             # open tadspad tutorial
             print('no help yet')
 
-
     def save_preferences(self):
 
         # save preferences to file before quit
@@ -343,17 +342,25 @@ class MainWindow(wx.Frame):
         get_name = ""
         get_title = ""
         get_author = ""
-        get_library = ""
+        get_library = ['system']
+        get_email = ""
+        get_htmldesc = ""
+        get_desc = ""
+        extensions = []
         if result == wx.ID_OK:
             get_name = ProjectFileSystem.remove_disallowed_filename_chars(dlg.game_name.GetValue())
             get_title = dlg.game_title.GetValue()
             get_author = dlg.author.GetValue()
+            get_email = dlg.email.GetValue()
+            get_htmldesc = dlg.htmldesc.GetValue()
+            get_desc = dlg.desc.GetValue()
             if dlg.lite.GetValue():
-                get_library = "adv3Lite"
+                get_library = ["../extensions/adv3Lite/adv3Lite"]
             if dlg.liter.GetValue():
-                get_library = "adv3Liter"
-            if dlg.elite.GetValue():
-                get_library = "adv3Elite"
+                get_library = ["../extensions/adv3Lite/adv3Liter"]
+            if dlg.custom.GetValue():
+                get_library = ["../extensions/adv3Lite/adv3Liter", get_name + '_custom']
+                extensions = dlg.extensions.GetCheckedStrings()
         dlg.Destroy()
         if get_name != "":
 
@@ -362,8 +369,13 @@ class MainWindow(wx.Frame):
             self.project.title = get_title
             self.project.name = get_name
             self.project.author = get_author
-            self.project.library = get_library
+            self.project.libraries.extend(get_library)
+            self.project.email = get_email
+            self.project.desc = get_desc.replace('\n', '')
+            self.project.htmldesc = get_htmldesc.replace('\n', '')
             ProjectFileSystem.new_project(self.project)
+            if extensions:
+                self.project.write_library(extensions)
             self.notebook.load_page(self.project.path, "start.t")
             self.object_browser.rebuild_object_catalog()
             self.project_browser.update_files()
@@ -389,7 +401,6 @@ class MainWindow(wx.Frame):
         # load preferences window
         prefs_window = PrefsEditWindow.PrefsEditWindow(self.preferences)
         prefs_window.Show()
-
 
 # run main window (top)
 app = wx.App(redirect=True)

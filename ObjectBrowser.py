@@ -69,7 +69,8 @@ class ObjectBrowser(wx.ListCtrl):
             else:
                 if file_contents:
                     master += file_contents
-                    objects = TClass.search(file_contents, "object", file_name)
+                    classes = TClass.search(file_contents, "object", file_name)
+                    objects = [c for c in classes.values()]
                     for o in objects:
 
                         # add object to our master object list
@@ -79,10 +80,12 @@ class ObjectBrowser(wx.ListCtrl):
                         TClass.get_all_members(o, self.notebook.classes)
 
         # and update the columns in the catalog
+        print [n.inherits for n in self.notebook.classes.values()]
         self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))
 
         # update classes which contain 'modify' keyword
         TClass.modify(master, self.notebook.classes)
+        TClass.cross_reference(self.notebook.classes)
 
         # now update the notebook objects list box
         index = 0
