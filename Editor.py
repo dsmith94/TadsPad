@@ -406,6 +406,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                     except:
                         MessageSystem.show_message("No help available on that keyword")
 
+
         # now search currently edited object
         line_number = self.GetCurrentLine()
         for o in self.notebook.objects:
