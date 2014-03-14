@@ -287,7 +287,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         line_number = self.GetCurrentLine()
         objects = TClass.search(self.Text, 'object').values()
         for o in objects:
-            TClass.get_all_members(o.name, self.notebook.classes)
+            TClass.get_all_class_members(o.name, self.notebook.classes)
             if line_number in range(o.line, o.end):
                 return o
 
@@ -324,7 +324,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         full_line, caret = self.GetCurLine()
         context = search(code, full_line[:caret])
         template = self.find_object_template()
-        print([g for g in self.notebook.classes['Room'].inherits])
+        TClass.get_all_object_members(template, self.notebook.classes)
+
         # analyze code based on present template and line in context
         for enclosure, suggestions, flags in analyzer:
             if enclosure in context:
@@ -399,9 +400,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             if the_object:
                 match = filter(lambda x: x.name == the_object, self.notebook.objects)
                 if match:
-                    if match.members:
+                    try:
                         [MessageSystem.show_message(m.name + ": " + m.help) for m in match.members
                          if member == prep_member(m.name)]
+                    except:
+                        MessageSystem.show_message("No help available on that keyword")
 
         # now search currently edited object
         line_number = self.GetCurrentLine()

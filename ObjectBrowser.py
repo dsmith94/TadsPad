@@ -77,10 +77,9 @@ class ObjectBrowser(wx.ListCtrl):
                         self.notebook.objects.append(o)
 
                         # update members in objects
-                        TClass.get_all_members(o, self.notebook.classes)
+                        TClass.get_all_object_members(o, self.notebook.classes)
 
         # and update the columns in the catalog
-        print [n.inherits for n in self.notebook.classes.values()]
         self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))
 
         # update classes which contain 'modify' keyword

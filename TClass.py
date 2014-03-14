@@ -8,7 +8,7 @@ import re
 
 # regular expression patterns
 class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)\n", flags=re.S)
-object_pattern = re.compile("(\+*\s)(\w*):[\s]([\w|,|\s]*)\s(.*)\n")
+object_pattern = re.compile("(\+*\s)(\w*):\s?([\w|,|\s]*)(\'.*\')?(\s)?(@\w*)?(\s*)?\n")
 block_comments = re.compile("/\*.*?\*/", flags=re.S)
 method_pattern = re.compile("(\w*\((\w*)\))")
 property_pattern = re.compile("(\w*)\s=")
@@ -148,7 +148,7 @@ def search(code, pattern, filename=None):
         pluses = 1
         name = 2
         inherits = 3
-        parent = 4
+        parent = 6
     if pattern == "modify":
         pattern = modify_pattern
         inherits = None
@@ -166,14 +166,15 @@ def search(code, pattern, filename=None):
             obj.name = m.group(name)
             if filename:
                 obj.file = filename
-            #if inherits:
-            #    obj.inherits = inherited(m.group(inherits))
+            if inherits:
+                obj.inherits = inherited(m.group(inherits))
             if pluses:
                 obj.pluses = len(m.group(pluses).strip())
             if parent:
-                if '@' in m.group(parent):
-                    obj.parent = m.group(parent)
-                    obj.parent = obj.parent[obj.parent.find('@') + 1:].strip()
+                if m.group(parent):
+                    if '@' in m.group(parent):
+                        obj.parent = m.group(parent)
+                        obj.parent = obj.parent[obj.parent.find('@') + 1:].strip()
             obj.line = code.count("\n", 1, m.start()) + 1
             obj.extract(code, m.start())
             obj.end = obj.line + obj.code.count("\n") + 1
@@ -265,7 +266,9 @@ def cross_reference(classes):
     for c in classes.values():
         c.inherits.extend(get_all_inherits(c, classes))
     for c in classes.keys():
-        get_all_members(c, classes)
+        get_all_class_members(c, classes)
+        #for m in classes[c].members:
+        #    print m.name
 
 
 def get_all_inherits(x, classes):
@@ -279,16 +282,30 @@ def get_all_inherits(x, classes):
     return list(set(result))
 
 
-def get_all_members(class_declaration, classes):
+def get_all_class_members(class_declaration, classes):
 
     # recursively return all members from a class declaration as a list
+    # this search is for classes, not objects
     if class_declaration in classes:
         for i in classes[class_declaration].inherits:
             if i in classes:
-                get_all_members(i, classes)
+                get_all_class_members(i, classes)
                 if classes[i].members:
                     classes[class_declaration].members.extend(classes[i].members)
                     classes[class_declaration].members = list(set(classes[class_declaration].members))
+
+
+def get_all_object_members(obj, classes):
+
+    # recursively return all members from a class declaration as a list
+    # this search is for objects
+    if obj:
+        if obj.inherits:
+            for i in obj.inherits:
+                if i in classes:
+                    if classes[i].members:
+                        obj.members.extend(classes[i].members)
+                        obj.members = list(set(obj.members))
 
 
 def find_comments(string, position):

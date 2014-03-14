@@ -158,9 +158,9 @@ class MainWindow(wx.Frame):
         if "size" in self.preferences:
             self.notebook.size = int(self.preferences["size"])
         if self.project:
+            self.notebook.load_classes(self.project)
             self.object_browser.rebuild_object_catalog()
             self.project_browser.update_files()
-            self.notebook.load_classes(self.project)
             self.Title = "TadsPad - " + self.project.name
             self.menus(True)
 
