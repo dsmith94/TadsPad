@@ -46,8 +46,9 @@ class TadsProject():
             for file_name in self.files:
                 files = files + "-source " + file_name[:-2] + "\n"
             file_text = file_text.replace('$SOURCE$', files)
+            libraries = ""
             for library in self.libraries:
-                libraries = "-lib " + library + "\n"
+                libraries += "-lib " + library + "\n"
             if libraries:
                 file_text = file_text.replace('$LIBRARY$', libraries)
             try:
@@ -60,7 +61,7 @@ class TadsProject():
     def write_library(self, sources):
 
         # write a custom library from a list source code files
-        sources = map(lambda x: 'source: ' + x, sources)
+        sources = map(lambda x: 'source: ../extensions/adv3Lite/' + x, sources)
         code = "name: " + self.name + " custom Library\n" + '\n'.join(sources)
         path = os.path.join(get_project_root(), self.name, self.name + '_custom.tl')
         try:
@@ -239,7 +240,7 @@ def load_project(file_name):
     # load project from filename
     the_project = TadsProject()
     try:
-        with open(file_name) as f:
+        with open(file_name, 'rU') as f:
             file_text = f.read()
     except IOError, e:
         MessageSystem.error("Could not load file: " + e.filename + " - fail.", "Project load error")
@@ -248,16 +249,14 @@ def load_project(file_name):
 
         # describe to parser what the source definition looks like
         sources = re.compile("-source ([\s|\"*|a-zA-Z]*)")
-        library = re.compile("-lib (\w*)")
+        library = re.compile("-lib (.*)\n")
 
         # get library used
         match = library.findall(file_text)
         if match:
+
             # found library, use it
             the_project.libraries = match
-        else:
-            # no match found, default is adv3lite
-            the_project.libraries = ["../extensions/adv3Lite/adv3Lite"]
 
         # now get list of sources
         the_project.files[:] = []

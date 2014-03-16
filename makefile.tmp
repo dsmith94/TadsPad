@@ -15,7 +15,6 @@
 -D LANGUAGE=english
 -w1     
 -Fy obj -Fo obj
--lib system
 $LIBRARY$
 
 

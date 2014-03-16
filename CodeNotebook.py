@@ -318,14 +318,18 @@ class Notebook(Aui.AuiNotebook):
 
 def parse_library(library, current_path):
 
+    # firstly, skip the system library
+    if library == 'system':
+        return {}
+
     # parse all classes/members in the presently selected world-model library
     sources_path = os.path.join(ProjectFileSystem.get_project_root(), 'extensions', 'adv3Lite')
     try:
         sources_file = open(os.path.join(current_path, library + ".tl"), 'rU')
         sources_raw = sources_file.read()
         sources_file.close()
-    except:
-        MessageSystem.error("Could not load library source: file corrupted or not found",
+    except IOError, e:
+        MessageSystem.error("Could not load library source: file corrupted or not found " + e.filename,
                             "Library Read Error for " + library)
         return {}
     lines = sources_raw.split('\n')
@@ -336,19 +340,16 @@ def parse_library(library, current_path):
     for line in lines:
         match = source_pattern.match(line)
         if match:
-            # ignore system.tl, we don't need it
-            if match.group(1) != "system":
-                sources.append(match.group(1))
-                number_of_sources += 1
+            sources.append(match.group(1))
+            number_of_sources += 1
 
     classes = {}
     load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
     for source in sources:
-        code_file = open(os.path.join(sources_path, source + ".t"), 'rU')
-        load_dlg.Update(sources_index, source + ".t")
-        code = code_file.read()
-        code_file.close()
-        classes.update(TClass.extract(code))
+        with open(os.path.join(sources_path, source + ".t"), 'rU') as code_file:
+            code = code_file.read()
+            load_dlg.Update(sources_index, source + ".t")
+            classes.update(TClass.extract(code))
         sources_index += 1
     TClass.cross_reference(classes)
     load_dlg.Destroy()
