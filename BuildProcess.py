@@ -30,16 +30,6 @@ def run(the_thread, the_project, terp, tads3path, script="", flags=""):
     else:
         interpreter = terp
     project_to_compile = flags + " -f \"" + the_project.path + "/" + the_project.filename + "\""
-    """
-    if os.path.exists(compiler.replace("\"", "")) is False:
-        MessageSystem.error("Could not compile project: " + the_project.filename + ", executable " +
-                            compiler + " does not exist.", "Compile failure")
-        return
-    if os.path.exists(terp.replace("\"", "")) is False:
-        MessageSystem.error("Could not compile project: " + the_project.filename + ", executable " +
-                            terp + " does not exist.", "Interpreter failure")
-        return
-    """
     compile_process = subprocess.Popen(compiler + project_to_compile, shell=True, stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT)
     output = compile_process.communicate()[0]

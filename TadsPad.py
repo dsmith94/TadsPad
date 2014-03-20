@@ -18,6 +18,7 @@ import Welcome
 import pickle
 import os
 import sys
+import shutil
 
 
 class MainWindow(wx.Frame):

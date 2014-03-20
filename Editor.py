@@ -19,9 +19,9 @@ direct_token = u"dobjFor"
 indirect_token = u"iobjFor"
 remap_direct_token = u"asDobjFor"
 remap_indirect_token = u"asIobjFor"
-inObj_suggestions = "preCond", verify_token + "()", check_token + "()", action_token + "()"
-verify_suggestions = ("logicalRank(rank, key);", "dangerous", "illogicalNow(msg, params);", "illogical(msg, params);",
-                      "illogicalSelf(msg, params);", "nonObvious", "inaccessible(msg, params);")
+inObj_suggestions = u"preCond", verify_token + u"()", check_token + u"()", action_token + u"()"
+verify_suggestions = (u"logicalRank(rank, key);", u"dangerous", u"illogicalNow(msg, params);", u"illogical(msg, params);",
+                      u"illogicalSelf(msg, params);", u"nonObvious", u"inaccessible(msg, params);")
 
 
 # pre-compile and cache regular expression patterns for use later

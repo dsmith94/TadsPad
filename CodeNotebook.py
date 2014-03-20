@@ -324,10 +324,11 @@ def parse_library(library, current_path):
 
     # parse all classes/members in the presently selected world-model library
     sources_path = os.path.join(ProjectFileSystem.get_project_root(), 'extensions', 'adv3Lite')
+
+    # attempt to read library
     try:
-        sources_file = open(os.path.join(current_path, library + ".tl"), 'rU')
-        sources_raw = sources_file.read()
-        sources_file.close()
+        with open(os.path.join(current_path, library + ".tl"), 'rU') as sources_file:
+            sources_raw = sources_file.read()
     except IOError, e:
         MessageSystem.error("Could not load library source: file corrupted or not found " + e.filename,
                             "Library Read Error for " + library)
@@ -343,10 +344,19 @@ def parse_library(library, current_path):
             sources.append(match.group(1))
             number_of_sources += 1
 
+    # we've collected all the source files from library, open each one
     classes = {}
     load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
     for source in sources:
-        with open(os.path.join(sources_path, source + ".t"), 'rU') as code_file:
+
+        # if a path doesn't exist in the source string, add one
+        if '/' in source:
+            path = source + '.t'
+        else:
+            path = os.path.join(sources_path, source + ".t")
+
+        # open and read source code file
+        with open(path, 'rU') as code_file:
             code = code_file.read()
             load_dlg.Update(sources_index, source + ".t")
             classes.update(TClass.extract(code))

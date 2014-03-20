@@ -32,7 +32,7 @@ class TadsProject():
     def write(self):
 
         # write makefile, for compilation process
-        path_string = get_project_root() + self.name + "/"
+        path_string = os.path.join(get_project_root(), self.name)
         file_text = None
         try:
             with open("./makefile.tmp", 'rU') as f:
@@ -42,15 +42,12 @@ class TadsProject():
                                 "Failed to read makefile.tmp")
         if file_text:
             file_text = file_text.replace('$NAME$', self.name)
-            files = ""
-            for file_name in self.files:
-                files = files + "-source " + file_name[:-2] + "\n"
+            files = "\n-source "
+            files += "\n-source ".join([f[:-2] for f in self.files])
             file_text = file_text.replace('$SOURCE$', files)
-            libraries = ""
-            for library in self.libraries:
-                libraries += "-lib " + library + "\n"
-            if libraries:
-                file_text = file_text.replace('$LIBRARY$', libraries)
+            libraries = "\n-lib "
+            libraries += "\n-lib ".join(self.libraries)
+            file_text = file_text.replace('$LIBRARY$', libraries)
             try:
                 with open(os.path.join(path_string, self.name + ".t3m"), 'w') as finished:
                     finished.write(file_text)
@@ -61,7 +58,8 @@ class TadsProject():
     def write_library(self, sources):
 
         # write a custom library from a list source code files
-        sources = map(lambda x: 'source: ../extensions/adv3Lite/' + x, sources)
+        sources = map(lambda x: 'source: ' + x.replace("\\", "/"),
+                      [os.path.join(get_project_root(), 'extensions', 'adv3Lite', s) for s in sources])
         code = "name: " + self.name + " custom Library\n" + '\n'.join(sources)
         path = os.path.join(get_project_root(), self.name, self.name + '_custom.tl')
         try:
@@ -195,7 +193,7 @@ def get_project_root():
 
     # get root directory for project folder
     # check first that the folder exists
-    path_string = os.path.expanduser('~/Documents/TADS 3/')
+    path_string = os.path.join(os.path.expanduser('~'), 'Documents', 'TADS 3')
     if os.path.exists(path_string) is False:
 
         # make it if it doesn't exist
