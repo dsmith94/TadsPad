@@ -2,6 +2,20 @@
 # welcome to tadspad box - used to get user input when starting tadspad (w/o a prev project found)
 
 import wx
+import random
+
+
+def get_tips():
+
+    # load tips from default location (same dir)
+    with open('./tips.txt', 'rU') as tips_file:
+        text = tips_file.read()
+        if text:
+            tips = text.split('\n')
+            random.shuffle(tips)
+            return "Tip of the day: \n" + tips[0]
+    return "No tips available. "
+
 
 class Box(wx.Dialog):
     def __init__(self, preferences):
@@ -16,9 +30,10 @@ class Box(wx.Dialog):
         self.height = screen_geometry.Width / 2
         contents = wx.BoxSizer(wx.VERTICAL)
         box_for_buttons = wx.BoxSizer(wx.HORIZONTAL)
-        tips_box = wx.StaticText(parent=self, label="No tips available")
-        tips_box.Font = wx.Font(12, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
-        tips_box.SetBackgroundColour('YELLOW')
+        tips_box = wx.StaticText(parent=self, label=get_tips())
+        tips_box.Wrap(self.width / 2)
+        tips_box.Font = wx.Font(9, wx.FONTFAMILY_TELETYPE, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+        tips_box.SetBackgroundColour('#FFFACD')
         open_button = wx.Button(self, wx.ID_OPEN, "&Open Project")
         open_button.Bind(wx.EVT_BUTTON, self.shutdown, id=wx.ID_OPEN)
         new_button = wx.Button(self, wx.ID_NEW, "&Create New Project")

@@ -177,6 +177,8 @@ class MainWindow(wx.Frame):
         # chief here is the last opened project
         if self.preferences["last project"]:
             self.project = ProjectFileSystem.load_project(self.preferences["last project"])
+        else:
+            self.first_time_load()
         self.mgr.LoadPerspective(self.preferences["layout"])
         if "colors" in self.preferences:
             self.notebook.colors = self.preferences["colors"]

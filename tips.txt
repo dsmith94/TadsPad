@@ -1,0 +1,11 @@
+You can spell check any file you're working on in TadsPad if you have the Internet connected. Just have the file open in the editor and press "F7."
+To navigate to a specific object in a TADS project, double-click the object in the Object Browser panel. Even if the file containing the object isn't currently open, TadsPad will pull it up for you.
+If your project has produced errors on compilation, you can double-click the error in the Compile Output panel and TadsPad will pull up the line with the offending code.
+TadsPad features context sensitive help. To learn about an adv3Lite specific property or method, simply click on it or move the caret to it with the arrow keys. Help text will appear in the Context Help panel.
+If you don't like the default panel layout, you can drag and dock any panel to any side of the screen, or simply float them as independent windows.
+TadsPad hooks into the TADS compiler and interpreter. It can usually guess where both exist on a given system, but if you need to change the defaults, simply click Edit->Executable Path from the menu bar.
+If you don't like the font size or colors, you change them easily from Edit->Text Settings on the menu bar.
+If a transcript from the last game run-thru is available, you can view it from Tools->View Transcript on the menu bar, or simply press "F6". You can run the game up to any command by double-clicking one of the commands on the Transcript View Window.
+You can pull up the full Tads/adv3Lite documentation at any time by pressing "F1".
+TadsPad is fully cross-platform. You can work on the same game (with none of the text character weirdness inherent to platform hopping) from any machine.
+Code completion recognizes game objects with custom members. The code recognition database refreshes with each project save, so if code completion is not working, try saving your work.
