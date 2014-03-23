@@ -9,3 +9,4 @@ If a transcript from the last game run-thru is available, you can view it from T
 You can pull up the full Tads/adv3Lite documentation at any time by pressing "F1".
 TadsPad is fully cross-platform. You can work on the same game (with none of the text character weirdness inherent to platform hopping) from any machine.
 Code completion recognizes game objects with custom members. The code recognition database refreshes with each project save, so if code completion is not working, try saving your work.
+When creating a new project, you have the option of using a "custom" library. This gives you the ability to use the adv3Liter library in conjunction with whatever adv3Lite source files and extensions you choose, giving your game setup maximum flexibility.

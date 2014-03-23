@@ -133,6 +133,8 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.load_transcript_view, view_transcript_item)
     spell_item = tools_menu.Append(wx.ID_ANY, 'Spell Check\tF7', 'After the Deadline Spell Check')
     top_window.Bind(wx.EVT_MENU, top_window.spell_check, spell_item)
+    library_item = tools_menu.Append(wx.ID_ANY, 'Reconfigure Library', 'Change the game\'s adv3Lite library setup')
+    top_window.Bind(wx.EVT_MENU, top_window.reconfig_library, library_item)
     tools_menu.AppendSeparator()
     debug_project_item = tools_menu.Append(wx.ID_ANY, 'Compile and Debug\tF5', 'Compile Project for Debugging')
     full_project_item = tools_menu.Append(wx.ID_ANY, 'Full Compile\tF8', 'Full Recompile for Debugging')

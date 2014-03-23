@@ -19,6 +19,7 @@ import pickle
 import os
 import sys
 import shutil
+import LibraryConfigWindow
 
 
 def is_64_windows():
@@ -151,6 +152,51 @@ class MainWindow(wx.Frame):
             # name is not valid, forget it
             else:
                 MessageSystem.error("No valid name selected - no new project file added.", "Sorry!")
+
+    def reconfig_library(self, event):
+
+        # re-configure the current library setup to the current project
+        get_library = ['system']
+        extensions = None
+        dialog = LibraryConfigWindow.Dialog()
+        result = dialog.ShowModal()
+        obj = os.path.join(ProjectFileSystem.get_project_root(), self.project.name, 'obj')
+        custom = os.path.join(ProjectFileSystem.get_project_root(), self.project.name, self.project.name + '_custom')
+        classes = os.path.join(ProjectFileSystem.get_project_root(), self.project.name, 'classes.dat')
+        if result == wx.ID_OK:
+            try:
+                if os.path.exists(classes):
+                    os.remove(classes)
+                if os.path.exists(custom):
+                    os.remove(custom)
+                if dialog.lite.GetValue():
+                    get_library.append("../extensions/adv3Lite/adv3Lite")
+                if dialog.liter.GetValue():
+                    get_library.append("../extensions/adv3Lite/adv3Liter")
+                if dialog.custom.GetValue():
+                    get_library.append("../extensions/adv3Lite/adv3Liter")
+                    get_library.append(self.project.name + '_custom')
+                    extensions = dialog.extensions.GetCheckedStrings()
+                self.project.libraries = get_library
+                if extensions:
+                    self.project.write_library(extensions)
+                self.object_browser.rebuild_object_catalog()
+                self.project_browser.update_files()
+
+                # load classes data from tads project directory
+                self.notebook.load_classes(self.project)
+
+                # everything in the obj directory must be killed too
+                shutil.rmtree(obj)
+                os.mkdir(obj)
+
+            except Exception as e:
+                MessageSystem.error("Failed to reconfigure library:\n" + e.message, "Library Action Aborted")
+                return
+            results = [l for l in get_library]
+            if extensions:
+                results.extend([e for e in extensions])
+            wx.CallAfter(MessageSystem.info, "Library reconfigured with: \n" + '\n'.join(results), "Library Reconfigure Complete")
 
     def on_load(self):
 
