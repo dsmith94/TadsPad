@@ -136,7 +136,7 @@ class Notebook(Aui.AuiNotebook):
     def save_page_as(self):
 
         # create a dialog box allowing user to set filename
-        path = os.path.abspath(os.path.expanduser("~/Documents/TADS 3/" + self.project_name + "/"))
+        path = os.path.abspath(os.path.expanduser("~/Documents/TADS 3/" + self.GetTopLevelParent().project.name + "/"))
         saveFileDialog = wx.FileDialog(self, "Save .t file", "", "", "t files (*.t)|*.t",
                                        wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if saveFileDialog.ShowModal() == wx.ID_CANCEL:
@@ -161,6 +161,12 @@ class Notebook(Aui.AuiNotebook):
                     page.editor.saved = True
                     self.SetPageText(index, page.editor.filename)
             index += 1
+
+    def close_all(self):
+
+        # close all opened pages
+        for page in xrange(self.GetPageCount()):
+            self.DeletePage(0)
 
     def new_page(self, name, the_project):
 

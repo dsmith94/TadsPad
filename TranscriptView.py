@@ -9,7 +9,7 @@ import BuildProcess
 
 
 class TranscriptViewWindow(wx.Frame):
-    def __init__(self, project, terp, tads3path):
+    def __init__(self, project, terp, tads3path, terminal):
         wx.Frame.__init__(self, None, title="Transcript of Last Session")
 
         r = wx.Display().GetGeometry()
@@ -22,6 +22,7 @@ class TranscriptViewWindow(wx.Frame):
         self.tads3path = tads3path
         self.transcript = process_transcript(project.path)
         self.project = project
+        self.terminal = terminal
         for command in self.transcript:
             transcript_ctrl.InsertStringItem(index, command)
             index += 1
@@ -43,8 +44,8 @@ class TranscriptViewWindow(wx.Frame):
                 break
             index += 1
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project, self.terp, self.tads3path, script)
-
+        BuildProcess.run(process, self.project, self.terp, self.tads3path, script=script, flags=' -v -d ',
+                         terminal=self.terminal)
         self.Close()
 
 
@@ -52,8 +53,7 @@ def process_transcript(project_path):
 
     # load a log file from "output.log" and return the transcript for game
     transcript = []
-    log_file = open(os.path.join(project_path, "transcript.txt"), 'rU')
-    if log_file:
+    with open(os.path.join(project_path, "transcript.txt"), 'rU') as log_file:
         log_string = log_file.read()
         log_string = log_string.replace("<line>", "")
         if log_string:
@@ -62,8 +62,6 @@ def process_transcript(project_path):
                 # read output file line by line and extract commands
                 if line != "" and line.find(">") < 1:
                     transcript.append(line)
-
-    log_file.close()
     return transcript
 
 

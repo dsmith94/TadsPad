@@ -288,7 +288,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         objects = TClass.search(self.Text, 'object').values()
         for o in objects:
             TClass.get_all_class_members(o.name, self.notebook.classes)
-            if line_number in range(o.line, o.end):
+            if line_number in xrange(o.line, o.end):
                 return o
 
     def auto_complete(self):
@@ -515,7 +515,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # pull strings from page and send to atd spellcheck service
         strings = self.extract_strings()
-        errors = atd.checkDocument(strings, "TadsPad_" + self.notebook.project_name)
+        errors = atd.checkDocument(strings, "TadsPad_" + self.GetTopLevelParent().project.name)
 
         # pull in ignored words from ignored.txt
         ignored_file = open(os.path.join(project.path, "ignore.txt"), 'rU')
@@ -527,8 +527,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # we now have a list of spelling errors, display to user
         if errors:
-            speller = SpellCheckerWindow.SpellCheckWindow(errors, self, project)
-            speller.Show()
+            speller = SpellCheckerWindow.SpellCheckWindow(wx.GetTopLevelWindows(), errors, self, project)
+            speller.ShowModal()
+        MessageSystem.info("No spelling errors found in this file.", "Hurray!")
 
 
 def check_for_plain_style(style):

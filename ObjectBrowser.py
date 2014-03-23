@@ -50,6 +50,10 @@ class ObjectBrowser(wx.ListCtrl):
 
         # rebuild objects catalog from the source files listed in our makefile
 
+        # no project? then exit
+        if wx.GetTopLevelParent(self).project is None:
+            return
+
         self.notebook.objects = list()
         self.DeleteAllItems()
 

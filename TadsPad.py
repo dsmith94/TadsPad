@@ -21,6 +21,31 @@ import sys
 import shutil
 
 
+def is_64_windows():
+    return 'PROGRAMFILES(X86)' in os.environ
+
+
+def get_program_files_32():
+    if is_64_windows():
+        return os.environ['PROGRAMFILES(X86)']
+    else:
+        return os.environ['PROGRAMFILES']
+
+
+def get_terminal():
+
+    # determine terminal by platform
+    if sys.platform == 'Darwin':
+        return "Terminal"
+    if sys.platform == 'Linux':
+        distro = sys.platform.linux_distribution()
+        red_hats = 'Arch', 'Fedora', 'PCLinuxOS', 'SuSE'
+        if red_hats in distro:
+            return 'xterm'
+        return "x-terminal-emulator"
+    return "xterm"
+
+
 class MainWindow(wx.Frame):
     def __init__(self, title):
         wx.Frame.__init__(self, None, title=title)
@@ -28,23 +53,22 @@ class MainWindow(wx.Frame):
         # list to gray certain menu items when no project loaded
         self.grayable = []
 
-        # find config data
-        self.config_path = ""
-        if sys.platform == 'win32':
-            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad", "prefs.dat")
-        else:
-            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.dat")
-
         # user preferences - blank by default, until we load something in them
         self.preferences = {}
 
-        # tads 3 path, varies according to platform
+        # find config data and default prefs, according to current platform
+        self.config_path = ""
         if sys.platform == 'win32':
-            self.preferences["tadspath"] = "C:/Program Files/TADS 3/t3make.exe"
-            self.preferences["terp"] = "C:/Program Files/TADS 3/htmlt3.exe"
+            self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad", "prefs.dat")
+            self.preferences["tadspath"] = os.path.join(get_program_files_32(), "TADS 3", "t3make.exe")
+            self.preferences["terp"] = os.path.join(get_program_files_32(), "TADS 3", "htmlt3.exe")
         else:
+            self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.dat")
             self.preferences["tadspath"] = "t3make"
-            self.preferences["terp"] = "frob"
+            self.preferences["terp"] = "frobtads"
+
+        # figure out default terminal by platform
+        self.preferences["terminal"] = get_terminal()
 
         # build main user interface
         BuildMainUi.init(self)
@@ -222,33 +246,47 @@ class MainWindow(wx.Frame):
 
     def close_project(self, event):
 
-        # close current tadspad project
-        self.project = None
-        self.object_browser.DeleteAllItems()
-        self.project_browser.DeleteAllItems()
-        self.Title = "TadsPad"
-        self.menus(False)
+        # check unsaved pages first
+        unsaved_pages = self.notebook.get_unsaved_pages()
+        appendix_message = ""
+        if len(unsaved_pages) != 0:
+            appendix_message += "\n"
+            for page in unsaved_pages:
+                appendix_message += "\n   " + page
+            appendix_message = appendix_message + "\n\n" + "is not yet saved!"
+        if MessageSystem.ask("Really close project? " + appendix_message, "Project files unsaved"):
+
+            # close current tadspad project
+            self.project = None
+            self.object_browser.DeleteAllItems()
+            self.project_browser.DeleteAllItems()
+            self.Title = "TadsPad"
+            self.menus(False)
+            self.notebook.close_all()
 
     def debug_project(self, event):
 
         # compile and run current tads story
         # to do this, make a new thread
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -v -d ')
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -v -d ',
+                         terminal=self.preferences["terminal"])
 
     def rebuild_project(self, event):
 
         # compile and rebuild tads project
         # to do this, make a new thread
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -v -d -a ')
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"],
+                         flags=' -v -d -a ', terminal=self.preferences["terminal"])
 
     def finalize_project(self, event):
 
         # compile final version of tads game project
         # to do this, make a new thread
         process = BuildProcess.CompileGame
-        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -a ')
+        BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -a ',
+                         terminal=self.preferences["terminal"])
 
     def load_project(self, event):
 
@@ -395,7 +433,9 @@ class MainWindow(wx.Frame):
     def load_transcript_view(self, event):
 
         # load transcript viewer with commands from last play-through
-        transcript_viewer = TranscriptView.TranscriptViewWindow(self.project, self.preferences["terp"], self.preferences["tadspath"])
+        transcript_viewer = TranscriptView.TranscriptViewWindow(self.project, self.preferences["terp"],
+                                                                self.preferences["tadspath"],
+                                                                self.preferences["terminal"])
         transcript_viewer.Show()
 
     def preferences_window(self, event):

@@ -56,9 +56,9 @@ class EntryWindow(wx.Dialog):
         box_master.Add(box_for_text, 0, wx.EXPAND | wx.ALL, border=width / 10)
         box_master.Add(box_for_buttons, 0, wx.EXPAND | wx.ALL, border=width / 10)
         box_master.SetSizeHints(self)
-        panel = wx.Panel(self)
-        panel.SetSizer(box_master)
-        panel.Layout()
+        self.SetSizer(box_master)
+        self.Layout()
+        self.Fit()
 
 
 def show_message(text):
@@ -66,20 +66,31 @@ def show_message(text):
     # display message in message pane
     MainWindow.get_instance().show_message(text)
 
+
 def show_errors(errors_list):
 
     # display errors as a listctrl report
     MainWindow.get_instance().show_errors(errors_list)
+
 
 def clear_errors():
 
     # clear errors on bottom panel
     MainWindow.get_instance().clear_errors()
 
+
 def error(message, title):
 
-    # display message with title bar string
+    # display error message with title bar string
     dlg = wx.MessageDialog(None, message, title, wx.OK | wx.ICON_WARNING)
+    dlg.ShowModal()
+    dlg.Destroy()
+
+
+def info(message, title):
+
+    # display info message with title bar string
+    dlg = wx.MessageDialog(None, message, title, wx.OK | wx.ICON_INFORMATION)
     dlg.ShowModal()
     dlg.Destroy()
 

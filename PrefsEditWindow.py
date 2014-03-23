@@ -24,6 +24,7 @@ class PrefsEditWindow(wx.Dialog):
         self.terpText = wx.TextCtrl(parent=self)
         self.terpButton = wx.Button(parent=self, label="Find Interpreter")
         self.terpButton.Bind(wx.EVT_BUTTON, self.find_terp)
+        self.terminalText = wx.TextCtrl(parent=self)
         self.okButton = wx.Button(parent=self, label='Ok')
         self.okButton.Bind(wx.EVT_BUTTON, self.finalize)
         self.cancelButton = wx.Button(parent=self, label='Cancel')
@@ -35,6 +36,10 @@ class PrefsEditWindow(wx.Dialog):
         contents.Add(wx.StaticText(parent=self, label="Interpreter Folder:"), 0, wx.EXPAND | wx.ALL, border=width / 50)
         contents.Add(self.terpText, 0, wx.EXPAND | wx.ALL, border=width / 50)
         contents.Add(self.terpButton, 0, wx.ALL, border=width / 50)
+        contents.Add(wx.StaticLine(parent=self), 0, wx.EXPAND | wx.ALL, border=width / 50)
+        contents.Add(wx.StaticText(parent=self, label="Terminal Emulator (unused on Windows platforms):"),
+                     0, wx.EXPAND | wx.ALL, border=width / 50)
+        contents.Add(self.terminalText, 0, wx.ALL, border=width / 50)
         buttons.Add(self.okButton, 0, wx.ALL, border=width / 50)
         buttons.Add(self.cancelButton, 0, wx.ALL, border=width / 50)
         contents.Add(wx.StaticLine(parent=self), 0, wx.EXPAND | wx.ALL, border=width / 50)
@@ -44,7 +49,9 @@ class PrefsEditWindow(wx.Dialog):
         # set default values to prefs passed in function argument
         self.tadsText.SetValue(self.prefs["tadspath"])
         self.terpText.SetValue(self.prefs["terp"])
+        self.terminalText.SetValue(self.prefs["terminal"])
         self.Layout()
+        self.Fit()
         self.Update()
 
     def finalize(self, event):
@@ -52,6 +59,7 @@ class PrefsEditWindow(wx.Dialog):
         # change prefs according to what we've set here on this window
         self.prefs["tadspath"] = self.tadsText.GetValue().replace("\\", "/")
         self.prefs["terp"] = self.terpText.GetValue().replace("\\", "/")
+        self.prefs["terminal"] = self.terminalText.GetValue().replace("\\", "/")
         self.Destroy()
 
     def custom_close_button(self, event):

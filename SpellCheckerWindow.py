@@ -7,9 +7,9 @@ import wx
 import atd
 import os
 
-class SpellCheckWindow(wx.Frame):
-    def __init__(self, errors, editor, project):
-        wx.Frame.__init__(self, None)
+class SpellCheckWindow(wx.Dialog):
+    def __init__(self, parent, errors, editor, project):
+        wx.Dialog.__init__(self, None)
 
         # set up spell check analyze window
         self.title_prefix = "Spell\Grammar Check: "
@@ -43,6 +43,7 @@ class SpellCheckWindow(wx.Frame):
         self.SetAutoLayout(True)
         self.SetSizer(sizer)
         self.Layout()
+        self.Fit()
         self.check_next_word()
 
     def check_next_word(self):
@@ -58,9 +59,9 @@ class SpellCheckWindow(wx.Frame):
             error_location = self.editor.Text.find(self.error.string)
             if error_location < 0:
                 self.check_next_word()
+                return
             self.editor.GotoPos(error_location)
-            self.editor.SetCurrentPos(error_location)
-            self.editor.SetAnchor(error_location + len(self.error.string))
+            self.editor.SetSelection(error_location, error_location + len(self.error.string))
             self.SetTitle(self.title_prefix + self.error.string)
             self.suggestions_ctrl.DeleteAllItems()
             for suggestion in self.error.suggestions:
