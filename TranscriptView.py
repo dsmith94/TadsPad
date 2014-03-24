@@ -13,7 +13,7 @@ class TranscriptViewWindow(wx.Frame):
         wx.Frame.__init__(self, None, title="Transcript of Last Session")
 
         r = wx.Display().GetGeometry()
-        self.SetSize(wx.Size(r.Width / 4, r.Height / 2))
+        self.SetSize(wx.Size(r.Width / 2, r.Height / 2))
         transcript_ctrl = wx.ListCtrl(parent=self, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         transcript_ctrl.InsertColumn(0, "Command List", width=r.Width / 4)
         transcript_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.command_activated)
@@ -30,7 +30,6 @@ class TranscriptViewWindow(wx.Frame):
         sizer.Add(transcript_ctrl, 1, wx.EXPAND | wx.ALL)
         self.SetSizer(sizer)
         self.Fit()
-        self.Update()
 
     def command_activated(self, event):
 
