@@ -36,14 +36,22 @@ def get_program_files_32():
 def get_terminal():
 
     # determine terminal by platform
-    if sys.platform == 'Darwin':
+
+    # first rule out apple mac
+    if sys.platform.lower() == 'darwin':
         return "Terminal"
-    if sys.platform == 'Linux':
-        distro = sys.platform.linux_distribution()
-        red_hats = 'Arch', 'Fedora', 'PCLinuxOS', 'SuSE'
-        if red_hats in distro:
-            return 'xterm'
-        return "x-terminal-emulator"
+
+    # if not mac, prolly a linux - but skip if we're windows
+    if sys.platform.lower() != 'win32':
+
+        # use one of these terminal emus if it exists
+        path = os.path.join('usr', 'bin')
+        terminals = 'x-terminal-emulator', 'gnome-terminal', 'konsole', 'xfce4-terminal'
+        for t in terminals:
+            if os.path.exists(os.path.join(path, t)):
+                return t
+
+    # if we still don't know what we are, return xterm
     return "xterm"
 
 

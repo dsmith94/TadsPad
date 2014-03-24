@@ -39,10 +39,9 @@ class PrefsEditWindow(wx.Dialog):
         contents.Add(wx.StaticLine(parent=self), 0, wx.EXPAND | wx.ALL, border=width / 50)
         contents.Add(wx.StaticText(parent=self, label="Terminal Emulator (unused on Windows platforms):"),
                      0, wx.EXPAND | wx.ALL, border=width / 50)
-        contents.Add(self.terminalText, 0, wx.ALL, border=width / 50)
+        contents.Add(self.terminalText, 0, wx.EXPAND | wx.ALL, border=width / 50)
         buttons.Add(self.okButton, 0, wx.ALL, border=width / 50)
         buttons.Add(self.cancelButton, 0, wx.ALL, border=width / 50)
-        contents.Add(wx.StaticLine(parent=self), 0, wx.EXPAND | wx.ALL, border=width / 50)
         contents.Add(buttons, 0, wx.ALIGN_BOTTOM | wx.ALIGN_RIGHT)
         self.SetSizer(contents)
 

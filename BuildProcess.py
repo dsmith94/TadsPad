@@ -23,6 +23,8 @@ def win32run(the_thread, the_project, compiler, interpreter, script="", flags=""
                                        stderr=subprocess.STDOUT)
     output = compile_process.communicate()[0]
     exit_code = compile_process.returncode
+
+    # prepare to play game - get transcript ready
     options = " -o \"" + os.path.join(the_project.path, "transcript.txt\" ")
     if script != "":
         with open(os.path.join(the_project.path, "input.txt"), mode='w') as input_file:
@@ -47,6 +49,8 @@ def nixrun(the_thread, the_project, compiler, interpreter, script="", flags="", 
                                        stderr=subprocess.STDOUT)
     output = compile_process.communicate()[0]
     exit_code = compile_process.returncode
+
+    # prepare to play game - get transcript ready
     input_path = os.path.join(the_project.path, 'input.txt')
     with open(input_path, mode='w') as input_file:
         input_file.write('\n'.join(['>record on', '>transcript.txt']))
