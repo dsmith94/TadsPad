@@ -107,6 +107,9 @@ class ColorSchemer:
         foregrounds[color.STC_T3_NUMBER] = 'number'
         foregrounds[color.STC_T3_PREPROCESSOR] = 'constant'
         foregrounds[color.STC_T3_LIB_DIRECTIVE] = 'constant'
+        foregrounds[color.STC_T3_BRACE] = 'annotation'
+        foregrounds[color.STC_STYLE_BRACEBAD] = 'searchResultIndication'
+        foregrounds[color.STC_STYLE_BRACELIGHT] = 'staticMethod'
         for key, value in foregrounds.iteritems():
             for c in self.colors:
                 weight = ''
@@ -377,7 +380,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # get context sensitive help
 
-        # print [m.name for m in self.notebook.classes["OutdoorRoom"].members]
+        # first check brace highlighting
+        self.check_brace()
 
         # start by getting the full word the caret is on top of
         search_string = self.get_full_word()
@@ -530,6 +534,26 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             speller = SpellCheckerWindow.SpellCheckWindow(wx.GetTopLevelWindows(), errors, self, project)
             speller.ShowModal()
         MessageSystem.info("No spelling errors found in this file.", "Hurray!")
+
+    def check_brace(self):
+
+        # check for brace match in current window - but watch out for quotes or comments
+        i = self.GetCurrentPos()
+        style = self.GetStyleAt(i)
+        if check_for_plain_style(style):
+
+            # we're not in a quote, do we have a brace?
+            character = self.Text[i]
+            if '{' in character:
+                match = self.BraceMatch(i)
+                if match != -1:
+                    self.BraceHighlight(i, match)
+                    return
+                else:
+                    self.BraceBadLight(i)
+                    return
+
+        self.BraceBadLight(-1)
 
 
 def check_for_plain_style(style):
