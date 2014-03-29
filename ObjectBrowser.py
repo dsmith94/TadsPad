@@ -1,9 +1,9 @@
 
 import wx
-import re
+import codecs
 import MessageSystem
-import operator
 import TClass
+
 
 
 # object browser subsystem
@@ -54,7 +54,7 @@ class ObjectBrowser(wx.ListCtrl):
         if wx.GetTopLevelParent(self).project is None:
             return
 
-        self.notebook.objects = list()
+        self.notebook.objects = {}
         self.DeleteAllItems()
 
         # loop through all files in project, and get objects in each
@@ -63,9 +63,8 @@ class ObjectBrowser(wx.ListCtrl):
         master = ''
         for file_name in files:
             try:
-                f = open(path + "/" + file_name, 'r')
-                file_contents = f.read()
-                f.close()
+                with codecs.open(path + "/" + file_name, 'rU', "utf-8") as f:
+                    file_contents = f.read()
             except IOError, e:
                 MessageSystem.error("Could not load file: " + e.filename, "File read error")
 
@@ -73,32 +72,18 @@ class ObjectBrowser(wx.ListCtrl):
             else:
                 if file_contents:
                     master += file_contents
-                    classes = TClass.search(file_contents, "object", file_name)
-                    objects = [c for c in classes.values()]
-                    for o in objects:
-
-                        # add object to our master object list
-                        self.notebook.objects.append(o)
+                    TClass.search(self.notebook.objects, file_contents, "object", file_name)
+                    for o in self.notebook.objects.values():
 
                         # update members in objects
                         TClass.get_all_object_members(o, self.notebook.classes)
-
-        # and update the columns in the catalog
-        self.notebook.objects = sorted(self.notebook.objects, key=operator.attrgetter('name'))
 
         # update classes which contain 'modify' keyword
         TClass.modify(master, self.notebook.classes)
         TClass.cross_reference(self.notebook.classes)
 
         # now update the notebook objects list box
-        index = 0
-        for o in self.notebook.objects:
-            self.InsertStringItem(index, o.name)
-            self.SetStringItem(index, 1, str(o.file))
-            self.SetStringItem(index, 2, str(o.line))
-            index += 1
-
-
-
-
-
+        for index, o in enumerate(sorted(self.notebook.objects.iterkeys(), key=lambda s: s.lower())):
+            self.InsertStringItem(index, self.notebook.objects[o].name)
+            self.SetStringItem(index, 1, str(self.notebook.objects[o].file))
+            self.SetStringItem(index, 2, str(self.notebook.objects[o].line))

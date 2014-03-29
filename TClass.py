@@ -28,18 +28,12 @@ class TClass:
         self.file = ""
         self.pluses = 0
         self.parent = ""
+        self.at = ""
         self.inherits = []
         self.members = []
 
     def __repr__(self):
         return repr((self.name, self.file, self.line, self.inherits))
-
-    def extract(self, code, start=0):
-
-        # extract code for this modify
-        # start at the index passed as "start"
-        end = code.find("\n;\n", start)
-        self.code = code[start:end]
 
     def get_code_from_string(self, string):
 
@@ -68,10 +62,10 @@ class TClass:
                 index += 1
             self.members.append(s)
 
-    def find_members(self):
+    def find_members(self, code):
 
         # find members (properties and methods) of this class
-        lines = self.code.split('\n')
+        lines = code.split('\n')
         within_block_comment = False
         index = 0
         for line in lines:
@@ -133,9 +127,9 @@ class TMethod(TMember):
             self.arguments = []
 
 
-def search(code, pattern, filename=None):
+def search(data, code, pattern, filename=None):
 
-    # search for definitions in code
+    # search for definitions in code, and append/update current data dictionary
     # when we find a definition, collect the line and classes it inherits and members
     name = 1
     inherits = 2
@@ -153,7 +147,6 @@ def search(code, pattern, filename=None):
         pattern = modify_pattern
         inherits = None
     objects = pattern.finditer(code)
-    result = {}
     ordered = []
 
     # search for objects
@@ -162,6 +155,18 @@ def search(code, pattern, filename=None):
         # found an object definition
         # muwahahahahaha
         if m:
+
+            # first check that object doesn't already exist
+            object_code = code_extract(code, m.start())
+            if m.group(name) in data:
+
+                # it does! is the code the same?
+                if data[m.group(name)].code == object_code:
+
+                    # no change needed here, pass on
+                    continue
+
+            # otherwise, make new object and use it in data dictionary
             obj = TClass()
             obj.name = m.group(name)
             if filename:
@@ -176,18 +181,16 @@ def search(code, pattern, filename=None):
                         obj.parent = m.group(parent)
                         obj.parent = obj.parent[obj.parent.find('@') + 1:].strip()
             obj.line = code.count("\n", 1, m.start()) + 1
-            obj.extract(code, m.start())
             obj.end = obj.line + obj.code.count("\n") + 1
-            obj.code = clean(obj.code)
-            obj.find_members()
+            obj.code = object_code
+            obj.find_members(clean(obj.code))
             ordered.append(obj)
-            result[m.group(name)] = obj
+            data[m.group(name)] = obj
 
     # if we did a search for pluses, handle object-parent pluses notation search
     find_parents(ordered)
 
     # we're done!
-    return result
 
 
 def find_parents(objects):
@@ -199,6 +202,12 @@ def find_parents(objects):
         if o.pluses:
             for x in reversed(objects[:index]):
                 if x.pluses < o.pluses:
+
+                    # in case we have pluses and @ on the same object, it's probably a topic
+                    if o.parent:
+                        o.at = o.parent
+
+                    # either way continue assigning
                     o.parent = x.name
                     break
 
@@ -211,13 +220,22 @@ def modify(code, classes):
     code = clean(code)
 
     # we've got our list of mods!
-    mods = search(code, "modify")
+    mods = {}
+    search(mods, code, "modify")
+    mods = mods.values()
 
     # go over list of classes and apply modifys
     for m in mods:
         if m.name in classes:
             classes[m.name].add_member(m.members)
     cross_modifys(mods, classes)
+
+
+def code_extract(code, start=0):
+
+    # extract object code from passed code string, return at ;
+    # start at the index passed as "start"
+    return code[start:code.find("\n;\n", start)]
 
 
 def extract(code):
@@ -229,13 +247,14 @@ def extract(code):
     code = clean(code)
 
     # stage 2: find classes by line numbers
-    classes = search(code, "class")
+    classes = {}
+    search(classes, code, "class")
 
     # stage 3: populate documentation by extracting comments, and get code
     for c in classes.values():
         c.help = find_comments(code, c.line)
         c.get_code_from_string(code)
-        c.find_members()
+        c.find_members(code)
 
         # stage 4: get documentation for each member of class
         for m in c.members:
@@ -267,8 +286,6 @@ def cross_reference(classes):
         c.inherits.extend(get_all_inherits(c, classes))
     for c in classes.keys():
         get_all_class_members(c, classes)
-        #for m in classes[c].members:
-        #    print m.name
 
 
 def get_all_inherits(x, classes):
@@ -300,12 +317,8 @@ def get_all_object_members(obj, classes):
     # recursively return all members from a class declaration as a list
     # this search is for objects
     if obj:
-        if obj.inherits:
-            for i in obj.inherits:
-                if i in classes:
-                    if classes[i].members:
-                        obj.members.extend(classes[i].members)
-                        obj.members = list(set(obj.members))
+        [obj.members.extend(classes[i].members) for i in obj.inherits if i in classes]
+        obj.members = list(set(obj.members))
 
 
 def find_comments(string, position):

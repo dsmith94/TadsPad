@@ -5,6 +5,7 @@ import wx
 import wx.stc
 import TClass
 import re
+import codecs
 import atd
 import SpellCheckerWindow
 import MessageSystem
@@ -135,7 +136,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.path = ""
 
         # context sensitive help reference
-        self.Bind(wx.stc.EVT_STC_UPDATEUI, self.call_context_help)
+        self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
 
         # autoindent system
         self.Bind(wx.stc.EVT_STC_CHARADDED, self.on_char_added)
@@ -168,6 +169,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # reference to notebook
         self.notebook = notebook
+
+        # current template
+        self.template = None
 
     def on_char_added(self, event):
 
@@ -281,18 +285,47 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         tokens = re.split('[{0}]'.format(re.escape(" [](){};")), line)
         obj = tokens[-1].split(".")[0]
         if obj:
-            return [m.name for o in self.notebook.objects if o.name == obj for m in o.members if m.type != "method"]
+            if obj in self.notebook.objects:
+                return [m.name for m in self.notebook.objects[obj].members if m.type != "method"]
 
     def find_object_template(self):
 
         # determine if caret is presently editing an object template
-        # return object reference if true, None if false
-        line_number = self.GetCurrentLine()
-        objects = TClass.search(self.Text, 'object').values()
-        for o in objects:
-            TClass.get_all_class_members(o.name, self.notebook.classes)
-            if line_number in xrange(o.line, o.end):
-                return o
+        # first clip out a few lines nearest the ; and the cursor
+        end = self.Text.rfind('\n', 0, self.GetCurrentPos())
+        start = self.Text.rfind('\n;\n', 0, end)
+        if start < 0:
+            start = 1
+        if end >= len(self.Text):
+            end = len(self.Text) - 1
+        line = (l.strip('+ ') for l in reversed(self.Text[start:end].split('\n')) if l if l[0] != ' ').next()
+
+        # we've got our lines, search for object template
+        if line == ';':
+
+            # we're not in a template
+            self.template = None
+            return
+
+        # object template definition found here by looking for :
+        if ':' in line:
+            obj = line[:line.find(":")]
+
+            # we are presently in an object template, get data on it
+            if obj in self.notebook.objects:
+                self.template = self.notebook.objects[obj]
+
+            else:
+
+                # not already in object cache, find inherited classes
+                classes = re.search(": ([\w|,|\s]*)", line)
+                if classes:
+                    self.template = TClass.TClass()
+                    self.template.inherits = TClass.inherited(classes.group(1))
+                    TClass.get_all_object_members(self.template, self.notebook.classes)
+
+            return
+
 
     def auto_complete(self):
 
@@ -326,8 +359,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         results = []
         full_line, caret = self.GetCurLine()
         context = search(code, full_line[:caret])
-        template = self.find_object_template()
-        TClass.get_all_object_members(template, self.notebook.classes)
+
+        # update object template
+        self.find_object_template()
 
         # analyze code based on present template and line in context
         for enclosure, suggestions, flags in analyzer:
@@ -341,10 +375,10 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                     if members:
                         results = members
                 if 'objects' in flags:
-                    results.extend([o.name for o in self.notebook.objects])
+                    results.extend(self.notebook.objects.keys())
                 if 'self' in flags:
-                    if template:
-                        results.extend([m.name for m in template.members])
+                    if self.template:
+                        results.extend([m.name for m in self.template.members])
                 if 'filter' in flags:
                     results = [r for f in flags['filter'] for r in results if f in r]
                 if 'prefix' in flags:
@@ -352,9 +386,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # still no results, figure out if we're in a object template
         if not results:
-            if template:
-                results.extend([m.name for m in template.members])
-                results.extend([o.name for o in self.notebook.objects])
+            if self.template:
+                results.extend([m.name for m in self.template.members])
+                results.extend(self.notebook.objects.keys())
             else:
                 results = outside_template
 
@@ -376,19 +410,18 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 return self.Text[char_index + 1:anchor_position + 1].strip(".").strip("@").strip()
         return ""
 
-    def call_context_help(self, event):
+    def update_ui(self, event):
 
-        # get context sensitive help
+        # get context sensitive help and check for brace match
 
         # first check brace highlighting
         self.check_brace()
 
         # start by getting the full word the caret is on top of
         search_string = self.get_full_word()
-        for c in self.notebook.classes.values():
-            if search_string == c.name:
-                MessageSystem.show_message(c.name + ": " + c.help)
-                return
+        if search_string in self.notebook.classes:
+            MessageSystem.show_message(search_string + ": " + self.notebook.classes[search_string].help)
+            return
 
         # search for help in classes matching the search string
         member = prep_member(search_string)
@@ -402,23 +435,13 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             tokens = re.split('[{0}]'.format(re.escape(" [](){};")), full_line[:caret])
             the_object = tokens[-1].split(".")[0]
             if the_object:
-                match = filter(lambda x: x.name == the_object, self.notebook.objects)
-                if match:
+                if the_object in self.notebook.objects:
                     try:
-                        [MessageSystem.show_message(m.name + ": " + m.help) for m in match.members
+                        [MessageSystem.show_message(m.name + ": " + m.help)
+                         for m in self.notebook.objects[the_object].members
                          if member == prep_member(m.name)]
                     except:
                         MessageSystem.show_message("No help available on that keyword")
-
-
-        # now search currently edited object
-        line_number = self.GetCurrentLine()
-        for o in self.notebook.objects:
-            if line_number in range(o.line, o.end):
-                for m in o.members:
-                    if member == prep_member(m.name):
-                        MessageSystem.show_message(m.name + ": " + m.help)
-                        break
 
     def get_full_word(self):
 
@@ -438,9 +461,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # save contents of editor to file
         try:
-            f = open(path + "/" + filename, 'w')
-            f.write("%s" % self.Text)
-            f.close()
+            with codecs.open(path + "/" + filename, 'w', "utf-8") as f:
+                f.write(self.Text)
             self.filename = filename
             self.path = path
             return True
@@ -537,8 +559,12 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
     def check_brace(self):
 
-        # check for brace match in current window - but watch out for quotes or comments
+        # cut if position is too high or too low
         i = self.GetCurrentPos()
+        if i == 0 or i > len(self.Text) - 1:
+            return
+
+        # check for brace match in current window - but watch out for quotes or comments
         style = self.GetStyleAt(i)
         if check_for_plain_style(style):
 

@@ -17,15 +17,13 @@ class TranscriptViewWindow(wx.Frame):
         transcript_ctrl = wx.ListCtrl(parent=self, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         transcript_ctrl.InsertColumn(0, "Command List", width=r.Width / 4)
         transcript_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.command_activated)
-        index = 0
         self.terp = terp
         self.tads3path = tads3path
         self.transcript = process_transcript(project.path)
         self.project = project
         self.terminal = terminal
-        for command in self.transcript:
-            transcript_ctrl.InsertStringItem(index, command)
-            index += 1
+        for i, command in enumerate(self.transcript):
+            transcript_ctrl.InsertStringItem(i, command)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(transcript_ctrl, 1, wx.EXPAND | wx.ALL)
         self.SetSizer(sizer)

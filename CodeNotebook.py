@@ -8,6 +8,7 @@ import wx.lib.agw.aui as Aui
 import Editor
 import MessageSystem
 import os.path
+import codecs
 import TClass
 import ProjectFileSystem
 import pickle
@@ -31,7 +32,7 @@ class Notebook(Aui.AuiNotebook):
         self.size = 12
 
         # the objects and classes
-        self.objects = list()
+        self.objects = {}
         self.classes = {}
 
     def __getitem__(self, index):
@@ -200,9 +201,8 @@ class Notebook(Aui.AuiNotebook):
         tp.editor.filename = filename
         tp.editor.path = path
         try:
-            code = open(path + "/" + filename, 'rU')
-            text = code.read()
-            code.close()
+            with codecs.open(path + "/" + filename, 'rU', "utf-8") as code:
+                text = code.read()
         except IOError, e:
             MessageSystem.error("Not able to open file: " + e.filename, "File load error")
         else:
