@@ -25,7 +25,7 @@ class Notebook(Aui.AuiNotebook):
         self.default_style = Aui.AUI_NB_DEFAULT_STYLE | Aui.AUI_NB_TAB_EXTERNAL_MOVE | wx.NO_BORDER
         self.SetWindowStyleFlag(self.default_style)
         self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.on_page_close)
-        self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
+        #self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
 
         # editor colors and text size
         self.colors = os.path.join('themes', 'Obsidian.xml')
@@ -288,11 +288,6 @@ class Notebook(Aui.AuiNotebook):
         page = self.GetPage(index)
         page.editor.saved = False
         self.SetPageText(index, "* " + self.GetPageText(index).strip("* "))     # show * by filename
-
-    def on_page_changed(self, event):
-
-        # when notebook page selection is changed, refresh object browser
-        self.GetTopLevelParent().object_browser.rebuild_object_catalog()
 
     def on_page_close(self, event):
 
