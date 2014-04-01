@@ -193,13 +193,17 @@ def get_project_root():
 
     # get root directory for project folder
     # check first that the folder exists
-    path_string = os.path.join(os.path.expanduser('~'), 'Documents', 'TADS 3')
-    if os.path.exists(path_string) is False:
+    if os.path.exists(os.path.expanduser("~/documents")):
+	    path = os.path.join(os.path.expanduser("~/documents"), 'TADS 3')
+    else:
+	    path = os.path.join(os.path.expanduser("~/Documents"), 'TADS 3')
+
+    if os.path.exists(path) is False:
 
         # make it if it doesn't exist
-        os.makedirs(path_string)
+        os.makedirs(path)
 
-    return path_string
+    return path
 
 
 def generate_ifid(author_and_title_string):

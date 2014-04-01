@@ -25,6 +25,33 @@ verify_suggestions = (u"logicalRank(rank, key);", u"dangerous", u"illogicalNow(m
                       u"illogicalSelf(msg, params);", u"nonObvious", u"inaccessible(msg, params);")
 
 
+# colors to tags list
+text_styles = (("STC_STYLE_LINENUMBER", 'lineNumber'),
+               ("STC_STYLE_DEFAULT", 'foreground'),
+               ("STC_T3_DEFAULT", 'foreground'),
+               ("STC_T3_X_DEFAULT", 'foreground'),
+               ("STC_T3_KEYWORD", 'keyword'),
+               ("STC_T3_BLOCK_COMMENT", 'multiLineComment'),
+               ("STC_T3_LINE_COMMENT", 'singleLineComment'),
+               ("STC_T3_HTML_STRING", 'string'),
+               ("STC_T3_S_STRING", 'string'),
+               ("STC_T3_D_STRING", 'string'),
+               ("STC_T3_X_STRING", 'string'),
+               ("STC_T3_HTML_STRING", 'string'),
+               ("STC_SEL_LINES", 'selectionForeground'),
+               ("STC_T3_HTML_DEFAULT", 'class'),
+               ("STC_T3_HTML_TAG", 'class'),
+               ("STC_T3_OPERATOR", 'operator'),
+               ("STC_T3_MSG_PARAM", 'operator'),
+               ("STC_T3_IDENTIFIER", 'operator'),
+               ("STC_T3_NUMBER", 'number'),
+               ("STC_T3_PREPROCESSOR", 'constant'),
+               ("STC_T3_LIB_DIRECTIVE", 'constant'),
+               ("STC_T3_BRACE", 'annotation'),
+               ("STC_STYLE_BRACEBAD", 'searchResultIndication'),
+               ("STC_STYLE_BRACELIGHT", 'staticMethod'))
+
+
 # pre-compile and cache regular expression patterns for use later
 pattern_line_comments = re.compile("//.*")
 pattern_block_comments = re.compile("/\*.*?\*/", flags=re.S)
@@ -63,6 +90,17 @@ class ColorSchemer:
         # attempt to load default color config
         self.load_colors(os.path.join('themes', 'Obsidian.xml'))
 
+    def set_color(self, color, tag, dictionary):
+
+        # set color in dictionary according to tag
+        # we have to encompass this in a try block because python stc implentations vary
+        try:
+            dictionary[getattr(wx.stc, color)] = tag
+        except AttributeError, a:
+
+            # silent fail on exception, log to console
+            print ("wxPython 3.0 or higher required for " + color)
+
     def load_colors(self, filename):
 
         # load color settings from xml file
@@ -75,7 +113,6 @@ class ColorSchemer:
     def update_colors(self, ctrl):
 
         # set styles from xml colors tree in memory
-        color = wx.stc
         caret = [c.attrib['color'] for c in self.colors if c.tag == 'foreground']
         if caret:
             caret = caret[0]
@@ -86,37 +123,14 @@ class ColorSchemer:
             background = background[0]
         else:
             background = 'WHITE'
-        foregrounds = dict()
-        foregrounds[color.STC_STYLE_LINENUMBER] = 'lineNumber'
-        foregrounds[color.STC_STYLE_DEFAULT] = 'foreground'
-        foregrounds[color.STC_T3_DEFAULT] = 'foreground'
-        foregrounds[color.STC_T3_X_DEFAULT] = 'foreground'
-        foregrounds[color.STC_T3_KEYWORD] = 'keyword'
-        foregrounds[color.STC_T3_BLOCK_COMMENT] = 'multiLineComment'
-        foregrounds[color.STC_T3_LINE_COMMENT] = 'singleLineComment'
-        foregrounds[color.STC_T3_HTML_STRING] = 'string'
-        foregrounds[color.STC_T3_S_STRING] = 'string'
-        foregrounds[color.STC_T3_D_STRING] = 'string'
-        foregrounds[color.STC_T3_X_STRING] = 'string'
-        foregrounds[color.STC_T3_HTML_STRING] = 'string'
-        foregrounds[color.STC_SEL_LINES] = 'selectionForeground'
-        foregrounds[color.STC_T3_HTML_DEFAULT] = 'class'
-        foregrounds[color.STC_T3_HTML_TAG] = 'class'
-        foregrounds[color.STC_T3_OPERATOR] = 'operator'
-        foregrounds[color.STC_T3_MSG_PARAM] = 'operator'
-        foregrounds[color.STC_T3_IDENTIFIER] = 'operator'
-        foregrounds[color.STC_T3_NUMBER] = 'number'
-        foregrounds[color.STC_T3_PREPROCESSOR] = 'constant'
-        foregrounds[color.STC_T3_LIB_DIRECTIVE] = 'constant'
-        foregrounds[color.STC_T3_BRACE] = 'annotation'
-        foregrounds[color.STC_STYLE_BRACEBAD] = 'searchResultIndication'
-        foregrounds[color.STC_STYLE_BRACELIGHT] = 'staticMethod'
+        foregrounds = {}
+        [self.set_color(c, t, foregrounds) for c, t in text_styles]
         for key, value in foregrounds.iteritems():
             for c in self.colors:
                 weight = ''
-                if key == color.STC_T3_BLOCK_COMMENT or key == color.STC_T3_LINE_COMMENT:
+                if key == wx.stc.STC_T3_BLOCK_COMMENT or key == wx.stc.STC_T3_LINE_COMMENT:
                     weight = ',italic'
-                if key == color.STC_T3_KEYWORD:
+                if key == wx.stc.STC_T3_KEYWORD:
                     weight = ',bold'
                 if c.tag == value:
                     style = "fore:%s,back:%s,face:%s,size:%d%s" % (c.attrib['color'], background, self.face, self.size, weight)
@@ -136,7 +150,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.path = ""
 
         # context sensitive help reference
-        self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
+        # self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
 
         # autoindent system
         self.Bind(wx.stc.EVT_STC_CHARADDED, self.on_char_added)

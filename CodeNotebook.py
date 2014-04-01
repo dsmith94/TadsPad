@@ -50,9 +50,8 @@ class Notebook(Aui.AuiNotebook):
 
             # it exists! load file so we get previously used class resources
             try:
-                the_file = open(os.path.join(path, "classes.dat"), 'rb')
-                self.classes = pickle.load(the_file)
-                the_file.close()
+                with open(os.path.join(path, "classes.dat"), 'rb') as the_file:
+                    self.classes = pickle.load(the_file)
             except IOError:
                 MessageSystem.error("Could not read file: " + path, path + " corrupted")
             return

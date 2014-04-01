@@ -90,6 +90,11 @@ class MainWindow(wx.Frame):
         # pass reference to this window to the message subsystem
         MessageSystem.MainWindow.instance = self
 
+        # only proceed if adv3Lite is installed in right place
+        if not os.path.exists(os.path.join(ProjectFileSystem.get_project_root(), 'extensions', 'adv3Lite')):
+            MessageSystem.error("Cannot find adv3Lite! Please install the adv3Lite package in your TADS 3/extensions folder. ", "Tadspad Load Failure")
+            exit(1)
+
         # load last project
         self.project = None
         self.on_load()

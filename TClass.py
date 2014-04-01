@@ -1,4 +1,3 @@
-
 #
 #   TADS Class search/datatype
 #
@@ -7,8 +6,8 @@
 import re
 
 # regular expression patterns
-class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)\n", flags=re.S)
-object_pattern = re.compile("(\+*\s)(\w*):\s?([\w|,|\s]*)(\'.*\')?(\s)?(@\w*)?(\s*)?\n")
+class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)", flags=re.S)
+object_pattern = re.compile("(\+*\s*)(\w*):\s?([\w|,|\s]*)(\'.*\')?(\s)?(@\w*)?(\s)?")
 block_comments = re.compile("/\*.*?\*/", flags=re.S)
 method_pattern = re.compile("(\w*\((\w*)\))")
 property_pattern = re.compile("(\w*)\s=")
@@ -146,18 +145,24 @@ def search(data, code, pattern, filename=None):
     if pattern == "modify":
         pattern = modify_pattern
         inherits = None
-    objects = pattern.finditer(code)
     ordered = []
+    lines = code.split('\n')
 
     # search for objects
-    for m in objects:
+    for i, line in enumerate(lines):
+
+        # skip if any indentation exists, we don't want indented code
+        if line:
+            if line[0] == ' ':
+                continue
 
         # found an object definition
         # muwahahahahaha
+        m = pattern.match(line)
         if m:
 
             # first check that object doesn't already exist
-            object_code = code_extract(code, m.start())
+            object_code = code_extract(lines, i)
             if m.group(name) in data:
 
                 # it does! is the code the same?
@@ -180,10 +185,10 @@ def search(data, code, pattern, filename=None):
                     if '@' in m.group(parent):
                         obj.parent = m.group(parent)
                         obj.parent = obj.parent[obj.parent.find('@') + 1:].strip()
-            obj.line = code.count("\n", 1, m.start()) + 1
-            obj.end = obj.line + obj.code.count("\n") + 1
+            obj.line = i
             obj.code = object_code
-            obj.find_members(clean(obj.code))
+            obj.end = obj.line + obj.code.count("\n") + 1
+            obj.find_members(obj.code)
             ordered.append(obj)
             data[m.group(name)] = obj
 
@@ -231,11 +236,17 @@ def modify(code, classes):
     cross_modifys(mods, classes)
 
 
-def code_extract(code, start=0):
+def code_extract(code, start):
 
     # extract object code from passed code string, return at ;
     # start at the index passed as "start"
-    return code[start:code.find("\n;\n", start)]
+    lines = code[start:]
+    result = ""
+    for l in lines:
+        result += l + '\n'
+        if l == ';':
+            return result
+    return result
 
 
 def extract(code):
@@ -284,6 +295,7 @@ def cross_reference(classes):
 
     for c in classes.values():
         c.inherits.extend(get_all_inherits(c, classes))
+        c.inherits = list(set(c.inherits))
     for c in classes.keys():
         get_all_class_members(c, classes)
 
@@ -292,10 +304,13 @@ def get_all_inherits(x, classes):
 
     # find all the inherits classes for passed class (x) in classes
     result = []
-    for i in x.inherits:
-        if i in classes:
-            result.extend(i)
-            result.extend(get_all_inherits(classes[i], classes))
+    if isinstance(x.inherits, basestring):
+        return [x.inherits]
+    else:
+        for i in x.inherits:
+            if i in classes:
+                result.append(i)
+                result.extend(get_all_inherits(classes[i], classes))
     return list(set(result))
 
 
