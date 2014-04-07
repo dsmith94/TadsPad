@@ -36,7 +36,7 @@ class TranscriptViewWindow(wx.Frame):
         index = 0
         script = ""
         for command in self.transcript:
-            script = script + ">" + command + "\n"
+            script = script + ">" + command.strip('>') + "\n"
             if index == index_max:
                 break
             index += 1

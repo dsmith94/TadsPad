@@ -393,6 +393,11 @@ class MainWindow(wx.Frame):
         # new project, but don't insist
         self.new_project_window()
 
+    def context_help(self, event):
+
+        # ring up context senstive help by calling current page in code notebook
+        self.notebook.context_help()
+
     def show_message(self, text):
 
         # display text in message pane

@@ -145,9 +145,11 @@ def create_menu_system(top_window):
 
     # help menu
     help_menu = wx.Menu()
-    bookshelf_item = help_menu.Append(wx.ID_HELP_CONTENTS, 'Adv3Lite Bookshelf\tF1', 'Complete TADS Adv3Lite Documentation Set')
+    context_item = help_menu.Append(wx.ID_HELP, 'Context-Sensitive Help\tF1', 'Search Adv3Lite Documentation for Word')
+    bookshelf_item = help_menu.Append(wx.ID_HELP_CONTENTS, 'Adv3Lite Bookshelf\tF2', 'Complete TADS Adv3Lite Documentation Set')
     help_menu.AppendSeparator()
     about_item = help_menu.Append(wx.ID_ABOUT, 'About TadsPad...', 'About TadsPad...')
+    top_window.Bind(wx.EVT_MENU, top_window.context_help, context_item)
     top_window.Bind(wx.EVT_MENU, MessageSystem.bookshelf_system, bookshelf_item)
     top_window.Bind(wx.EVT_MENU, MessageSystem.about_box, about_item)
 

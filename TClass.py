@@ -269,7 +269,7 @@ def extract(code):
 
         # stage 4: get documentation for each member of class
         for m in c.members:
-            m.find_comments(c.code)
+            m.find_comments(code)
 
     return classes
 

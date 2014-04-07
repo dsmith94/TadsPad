@@ -121,6 +121,20 @@ class Notebook(Aui.AuiNotebook):
                 return_value.append(page.editor.filename)
         return return_value
 
+    def context_help(self):
+
+        # ring up context senstive help by calling current page in code notebook
+        try:
+            index = self.GetSelection()
+            page = self.GetPage(index)
+        except IndexError, e:
+            MessageSystem.error("Must have an open code window for context help system. ", "No Code Window Open")
+        else:
+            try:
+                MessageSystem.show_message(page.editor.context_help())
+            except:
+                MessageSystem.show_message("No help found on that keyword. ")
+
     def save_page(self):
 
         # save currently selected page
@@ -361,6 +375,7 @@ def parse_library(library, current_path):
             load_dlg.Update(sources_index, source + ".t")
             classes.update(TClass.extract(code))
         sources_index += 1
+    TClass.cross_reference(classes)
     TClass.cross_reference(classes)
     load_dlg.Destroy()
     return classes

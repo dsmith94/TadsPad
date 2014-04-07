@@ -300,7 +300,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         obj = tokens[-1].split(".")[0]
         if obj:
             if obj in self.notebook.objects:
-                return [m.name for m in self.notebook.objects[obj].members if m.type != "method"]
+                return [m.name for m in self.notebook.objects[obj].members]
 
     def find_object_template(self):
 
@@ -337,9 +337,18 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                     self.template = TClass.TClass()
                     self.template.inherits = TClass.inherited(classes.group(1))
                     TClass.get_all_object_members(self.template, self.notebook.classes)
+                    return
 
-            return
+        # otherwise, look for pluses
+        if len(line) > 2:
+            if line[0] == '+' or line[1] == '+':
 
+                classes = re.search("\+\s([\w|,|\s]*)", line)
+                if classes:
+                    self.template = TClass.TClass()
+                    self.template.inherits = TClass.inherited(classes.group(1))
+                    TClass.get_all_object_members(self.template, self.notebook.classes)
+                    return
 
     def auto_complete(self):
 
@@ -424,24 +433,16 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 return self.Text[char_index + 1:anchor_position + 1].strip(".").strip("@").strip()
         return ""
 
-    def update_ui(self, event):
+    def context_help(self):
 
-        # get context sensitive help and check for brace match
-
-        # first check brace highlighting
-        self.check_brace()
-
+        # display context help from valid word in call tip box
         # start by getting the full word the caret is on top of
         search_string = self.get_full_word()
         if search_string in self.notebook.classes:
-            MessageSystem.show_message(search_string + ": " + self.notebook.classes[search_string].help)
-            return
+            return self.notebook.classes[search_string].help
 
         # search for help in classes matching the search string
         member = prep_member(search_string)
-        if 'objFor' in member:
-            MessageSystem.show_message("Action handling with: " + member)
-            return
 
         # search current line for help data
         full_line, caret = self.GetCurLine()
@@ -450,12 +451,17 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             the_object = tokens[-1].split(".")[0]
             if the_object:
                 if the_object in self.notebook.objects:
-                    try:
-                        [MessageSystem.show_message(m.name + ": " + m.help)
-                         for m in self.notebook.objects[the_object].members
-                         if member == prep_member(m.name)]
-                    except:
-                        MessageSystem.show_message("No help available on that keyword")
+                    return next(m.help for m in self.notebook.objects[the_object].members if member == prep_member(m.name))
+
+        # search by current object template
+        self.find_object_template()
+        if self.template:
+            return next((m.name + ": " + m.help) for m in self.template.members if search_string == prep_member(m.name) if m.help != "")
+
+    def update_ui(self, event):
+
+        # check brace highlighting
+        self.check_brace()
 
     def get_full_word(self):
 
@@ -612,10 +618,12 @@ def word_boundary(char):
     # check that the char passed is/isnot a word boundary
     # return true if word boundary
     # false otherwise
+    # as a temp debugging measure, we have removed paranths from separator test
 
     if char.isspace():
         return True
-    separators = '.', '[', ']', '{', '}', '(', ')'
+    # separators = '.', '[', ']', '{', '}', '(', ')'
+    separators = '.', '[', ']', '{', '}'
     if char in separators:
         return True
     return False
@@ -652,7 +660,9 @@ def filter_suggestions(token, suggestions):
         return return_value
     for word in suggestions:
         if token.lower() in word.lower():
-            return_value.append(word)
+
+            # this fixes a weird bug with the asDobjFor macros
+            return_value.append(word.replace("asDobjfor", "asDobjFor"))
     return return_value
 
 
@@ -688,16 +698,18 @@ def prep_member(member):
         return string
     for c in string:
         if c is '(':
-            break;
+            break
         return_value += c
     return return_value
-
 
 def search(code, line):
 
     # scan current code for possible enclosures we're in
     # look first in current line, then in all code
     # the order here is important, by the way
+    if len(line) > 2:
+        if line[0] == '+' or line[1] == '+':
+            return ':'
     if '@' in line:
         return '@'
     if ':' in line:

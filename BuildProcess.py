@@ -53,7 +53,7 @@ def nixrun(the_thread, the_project, compiler, interpreter, script="", flags="", 
     # prepare to play game - get transcript ready
     input_path = os.path.join(the_project.path, 'input.txt')
     with open(input_path, mode='w') as input_file:
-        input_file.write('\n'.join(['>record on', '>transcript.txt']))
+        input_file.write('\n'.join(['>record on', '>transcript.txt\n']))
         if script != "":
             input_file.write(script)
 
