@@ -149,7 +149,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.filename = "untitled"
         self.path = ""
 
-        # context sensitive help reference
+        # check brace matching
         # self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
 
         # autoindent system
@@ -157,7 +157,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # set lexer to tads 3
         self.SetLexer(wx.stc.STC_LEX_TADS3)
-        self.SetKeyWords(0, "break case catch class case continue do default delete else enum finally for foreach function goto if intrinsic local modify new nil property replace return self switch throw token true try while")
+        self.SetKeyWords(0, "break case catch class case continue do default delete else enum finally for foreach function goto if intrinsic local modify new nil property replace return self switch throw token true try while end")
 
         # default margin settings
         self.SetMarginType(0, wx.stc.STC_MARGIN_NUMBER)
@@ -194,96 +194,151 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if check_for_plain_style(anchor_at_style) is False:
             return
 
-        # when char is added, handle autoindent
+        # when return key char is added, handle autoindent
         if event.GetKey() == 10:
+
+            # check if we've just added an object or class
+            line = self.GetCurrentLine()
+            if line > 0:
+                search_line = self.Text.split('\n')[line - 1]
+                if search_line:
+                    if search_line[0] == '+' or ':' in search_line and search_line[0].isalpha():
+                        self.AddText("\n;\n")
+                        self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
+                        self.SetAnchor(self.GetAnchor() - 3)
+                        self.SetCurrentPos(self.GetCurrentPos() - 3)
+                        return
+
+            # otherwise, standard auto-indent
             self.auto_indent()
 
         # when bracket is added, autoadd matching close bracket
         if event.GetKey() == 123:
-            self.add_brackets()
+            self.replace_with_enclosure(u"{\n\n}")
+            line = self.GetCurrentLine()
+            self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 2))
+            self.SetLineIndentation(line + 1, self.GetLineIndentation(line) - self.GetIndent())
+            self.SetAnchor(self.GetAnchor() + (self.GetIndent() * 2))
+            self.SetCurrentPos(self.GetCurrentPos() + (self.GetIndent() * 2))
 
         # when quotes added, autoadd quotes
         if event.GetKey() == 34:
-            self.add_double_quotes()
+            self.replace_with_enclosure(u"\" \"")
 
         # handle autocompletion too
         self.auto_complete()
+
+    def replace_with_enclosure(self, enclosure):
+
+        # replace current word we're editing with an enclosure of some kind, from string passed above
+        # used specifically for autocomp system
+        self.AutoCompCancel()
+        self.WordLeftExtend()
+        self.ReplaceSelection(enclosure)
+        self.SetAnchor(self.GetAnchor() - 2)
+        self.SetCurrentPos(self.GetCurrentPos() - 2)
 
     def auto_code_selected(self, event):
 
         # we've selected an auto completion expression! under certain conditions,
         # we may choose to code templates
         selection = event.GetText()
-        position = self.GetAnchor()
 
         # for when we insert anything ending in the word "Desc" add double quotes
         if selection[-4:] == u"Desc":
-            self.InsertText(position, u" = \"\"")
+            self.replace_with_enclosure(selection + u" = \" \"")
 
         # for when we insert anything ending in the word "Msg" add single quotes
         if selection[-3:] == u"Msg":
-            self.InsertText(position, u" = \'\'")
+            self.replace_with_enclosure(selection + u" = ' '")
 
         # regions
         if selection == u"regions":
-            self.InsertText(position, u" = [  ]")
+            self.replace_with_enclosure(selection + u" = [  ]")
 
         # for define indirect action
         if u"DefineIAction" in selection:
-
-            self.InsertText(position, self.insert_indent(1) + u"execAction(cmd)" + self.insert_indent(1) +
+            self.InsertText(self.GetCurrentPos(), self.insert_indent(1) + u"execAction(cmd)" + self.insert_indent(1) +
                             u"{" + self.insert_indent(2) + u"\"{You} can't do that now. \";" +
                             self.insert_indent(1) + u"}" + self.insert_indent(0) + ";")
 
         # for T action
         if u"DefineTAction" in selection:
-            self.InsertText(position, self.insert_indent(0) + ";")
+            self.InsertText(self.GetCurrentPos(), self.insert_indent(0) + ";")
 
         # for TI action
         if u"DefineTIAction" in selection:
-            self.InsertText(position, self.insert_indent(0) + ";")
+            self.InsertText(self.GetCurrentPos(), self.insert_indent(0) + ";")
 
         # for new verb rules
         if u"VerbRule" in selection:
-            self.InsertText(position, self.insert_indent(1) + u"'verb'"
+            self.InsertText(self.GetCurrentPos(), self.insert_indent(1) + u"'verb'"
                             + self.insert_indent(1) + u": VerbProduction"
                             + self.insert_indent(1) + u"action = Verb"
                             + self.insert_indent(1) + u"verbPhrase = 'verb/verbing'"
                             + self.insert_indent(1) + u"missingQ = 'what do you want to verb'"
                             + self.insert_indent(0) + u";")
 
+    def fix_indents(self):
+
+        # fix indent levels so they are correct, usually before a save
+        # watch out for quotes or comments
+        level = 0
+        line = 0
+        skip = False
+        indent = self.GetIndent()
+        comments = 3
+        special = 2
+        for index, c in enumerate(self.Text[:]):
+            if c == '\n':
+                if skip:
+                    self.SetLineIndentation(line, 0)
+                    skip = False
+                else:
+                    self.SetLineIndentation(line, level * indent)
+                line += 1
+                continue
+            style = self.GetStyleAt(index)
+            if style != comments and style != special and not skip:
+
+                # look for object defs
+                if level == 0:
+                    if c.isalpha() or c == u'+':
+
+                        # alphabetical chars at level zero prolly means an object. increase level
+                        skip = True
+                        level = 1
+                        continue
+
+                # we're not in a quote, do we have a brace?
+                if level > 1:
+
+                    if c == u'{':
+                        # we have a brace, set indent level higher
+                        level += 1
+
+                    # opposite for closing braces
+                    if c == u'}':
+                        level -= 1
+
+                # look for semicolons at level 1
+                else:
+                    if c == u';':
+                        level = 0
+                        skip = True
+
+            if level < 0:
+                level = 0
+
     def insert_indent(self, level):
 
         # insert a number of indents * level
-
         indent = self.GetIndent()
         return_value = "\n"
         for i in range(level):
             for k in range(indent):
                 return_value += " "
         return return_value
-
-    def add_brackets(self):
-
-        # add brackets to edited code
-        position = self.GetAnchor()
-        line = self.GetCurrentLine()
-        self.InsertText(position, "\n\n}")
-        self.SetLineIndentation(line, self.GetLineIndentation(line))
-        self.SetLineIndentation(line + 1, self.GetLineIndentation(line) + self.GetIndent())
-        self.SetLineIndentation(line + 2, self.GetLineIndentation(line))
-
-    def add_double_quotes(self):
-
-        # add quotes to edited code
-        position = self.GetAnchor()
-        self.InsertText(position, "\"")
-
-    def add_single_quotes(self):
-
-        # add single quotes to edited code
-        position = self.GetAnchor()
-        self.InsertText(position, "'")
 
     def auto_indent(self):
 
@@ -480,6 +535,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def save(self, path, filename):
 
         # save contents of editor to file
+        #self.fix_indents()
         try:
             with codecs.open(path + "/" + filename, 'w', "utf-8") as f:
                 f.write(self.Text)
