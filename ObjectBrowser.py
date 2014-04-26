@@ -80,7 +80,6 @@ class ObjectBrowser(wx.ListCtrl):
 
         # update classes which contain 'modify' keyword
         TClass.modify(master, self.notebook.classes)
-        TClass.cross_reference(self.notebook.classes)
 
         # now update the notebook objects list box
         for index, o in enumerate(sorted(self.notebook.objects.iterkeys(), key=lambda s: s.lower())):

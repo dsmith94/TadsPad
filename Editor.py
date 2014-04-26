@@ -24,6 +24,59 @@ inObj_suggestions = u"preCond", verify_token + u"()", check_token + u"()", actio
 verify_suggestions = (u"logicalRank(rank, key);", u"dangerous", u"illogicalNow(msg, params);", u"illogical(msg, params);",
                       u"illogicalSelf(msg, params);", u"nonObvious", u"inaccessible(msg, params);")
 
+function_suggestions = (u"finishGameMsg(msg, extra)", u"finishGame()")
+endgame_suggestions = (u"ftDeath", u"ftVictory")
+
+# default theme if file won't load for some reason
+default_theme = """
+<?xml version="1.0" encoding="utf-8"?>
+<colorTheme id="21" name="Obsidian" modified="2011-02-01 16:43:47" author="Morinar">
+    <searchResultIndication color="#616161" />
+    <filteredSearchResultIndication color="#616161" />
+    <occurrenceIndication color="#616161" />
+    <writeOccurrenceIndication color="#616161" />
+    <findScope color="#E0E2E4" />
+    <deletionIndication color="#E0E2E4" />
+    <sourceHoverBackground color="#FFFFFF" />
+    <singleLineComment color="#7D8C93" />
+    <multiLineComment color="#7D8C93" />
+    <commentTaskTag color="#FF8BFF" />
+    <javadoc color="#7D8C93" />
+    <javadocLink color="#678CB1" />
+    <javadocTag color="#E0E2E4" />
+    <javadocKeyword color="#A082BD" />
+    <class color="#678CB1" />
+    <interface color="#678CB1" />
+    <method color="#678CB1" />
+    <methodDeclaration color="#E8E2B7" />
+    <bracket color="#E8E2B7" />
+    <number color="#FFCD22" />
+    <string color="#EC7600" />
+    <operator color="#E8E2B7" />
+    <keyword color="#93C763" />
+    <annotation color="#A082BD" />
+    <staticMethod color="#E0E2E4" />
+    <localVariable color="#E0E2E4" />
+    <localVariableDeclaration color="#E0E2E4" />
+    <field color="#678CB1" />
+    <staticField color="#678CB1" />
+    <staticFinalField color="#E0E2E4" />
+    <deprecatedMember color="#E0E2E4" />
+    <enum color="#E0E2E4" />
+    <inheritedMethod color="#E0E2E4" />
+    <abstractMethod color="#E0E2E4" />
+    <parameterVariable color="#E0E2E4" />
+    <typeArgument color="#E0E2E4" />
+    <typeParameter color="#E0E2E4" />
+    <constant color="#A082BD" />
+    <background color="#293134" />
+    <currentLine color="#2F393C" />
+    <foreground color="#E0E2E4" />
+    <lineNumber color="#81969A" />
+    <selectionBackground color="#804000" />
+    <selectionForeground color="#E0E2E4" />
+</colorTheme>
+"""
 
 # colors to tags list
 text_styles = (("STC_STYLE_LINENUMBER", 'lineNumber'),
@@ -76,6 +129,11 @@ analyzer = (verify_token, verify_suggestions, {'objects': None, 'self': None}), 
 # defaults when editing outside a template
 outside_template = u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class"
 
+# reserved keywords
+reserved_words = ("break", "case", "catch", "class", "case", "continue", "do", "default", "delete", "else", "enum",
+                  "finally", "for", "foreach", "function", "goto", "if", "intrinsic", "local", "modify", "new", "nil",
+                  "property", "replace", "return", "self", "switch", "throw", "token", "true", "try", "while", "end")
+
 
 class ColorSchemer:
 
@@ -88,7 +146,12 @@ class ColorSchemer:
         self.colors = None
 
         # attempt to load default color config
-        self.load_colors(os.path.join('themes', 'Obsidian.xml'))
+        try:
+            self.load_colors(os.path.join('themes', 'Obsidian.xml'))
+        except Exception, e:
+            print ("Could not load default theme - Obsidian.xml, using built-in default")
+            tree = ET.ElementTree(ET.fromstring(default_theme))
+            self.colors = tree.getroot()
 
     def set_color(self, color, tag, dictionary):
 
@@ -150,14 +213,14 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.path = ""
 
         # check brace matching
-        # self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
+        self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
 
         # autoindent system
         self.Bind(wx.stc.EVT_STC_CHARADDED, self.on_char_added)
 
         # set lexer to tads 3
         self.SetLexer(wx.stc.STC_LEX_TADS3)
-        self.SetKeyWords(0, "break case catch class case continue do default delete else enum finally for foreach function goto if intrinsic local modify new nil property replace return self switch throw token true try while end")
+        self.SetKeyWords(0, ' '.join(reserved_words))
 
         # default margin settings
         self.SetMarginType(0, wx.stc.STC_MARGIN_NUMBER)
@@ -214,16 +277,23 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # when bracket is added, autoadd matching close bracket
         if event.GetKey() == 123:
-            self.replace_with_enclosure(u"{\n\n}")
+            self.AutoCompCancel()
+            self.SetAnchor(self.GetAnchor() - 1)
+            self.SetCurrentPos(self.GetCurrentPos())
+            self.ReplaceSelection(u"\n{\n\n}")
             line = self.GetCurrentLine()
-            self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 2))
-            self.SetLineIndentation(line + 1, self.GetLineIndentation(line) - self.GetIndent())
-            self.SetAnchor(self.GetAnchor() + (self.GetIndent() * 2))
-            self.SetCurrentPos(self.GetCurrentPos() + (self.GetIndent() * 2))
+            indent = self.GetLineIndentation(line + 1)
+            self.SetLineIndentation(line - 2, indent + (self.GetIndent() * 1))
+            self.SetLineIndentation(line - 1, indent + (self.GetIndent() * 2))
+            self.SetLineIndentation(line, indent + (self.GetIndent() * 1))
+            self.SetAnchor(self.GetAnchor() - (indent + self.GetIndent() + 2))
+            self.SetCurrentPos(self.GetCurrentPos() - (indent + self.GetIndent() + 2))
 
         # when quotes added, autoadd quotes
         if event.GetKey() == 34:
             self.replace_with_enclosure(u"\" \"")
+        if event.GetKey() == 39:
+            self.replace_with_enclosure(u"\' \'")
 
         # handle autocompletion too
         self.auto_complete()
@@ -278,57 +348,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                             + self.insert_indent(1) + u"verbPhrase = 'verb/verbing'"
                             + self.insert_indent(1) + u"missingQ = 'what do you want to verb'"
                             + self.insert_indent(0) + u";")
-
-    def fix_indents(self):
-
-        # fix indent levels so they are correct, usually before a save
-        # watch out for quotes or comments
-        level = 0
-        line = 0
-        skip = False
-        indent = self.GetIndent()
-        comments = 3
-        special = 2
-        for index, c in enumerate(self.Text[:]):
-            if c == '\n':
-                if skip:
-                    self.SetLineIndentation(line, 0)
-                    skip = False
-                else:
-                    self.SetLineIndentation(line, level * indent)
-                line += 1
-                continue
-            style = self.GetStyleAt(index)
-            if style != comments and style != special and not skip:
-
-                # look for object defs
-                if level == 0:
-                    if c.isalpha() or c == u'+':
-
-                        # alphabetical chars at level zero prolly means an object. increase level
-                        skip = True
-                        level = 1
-                        continue
-
-                # we're not in a quote, do we have a brace?
-                if level > 1:
-
-                    if c == u'{':
-                        # we have a brace, set indent level higher
-                        level += 1
-
-                    # opposite for closing braces
-                    if c == u'}':
-                        level -= 1
-
-                # look for semicolons at level 1
-                else:
-                    if c == u';':
-                        level = 0
-                        skip = True
-
-            if level < 0:
-                level = 0
 
     def insert_indent(self, level):
 
@@ -454,6 +473,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                         results = members
                 if 'objects' in flags:
                     results.extend(self.notebook.objects.keys())
+                    #results.extend(self.notebook.globals)
                 if 'self' in flags:
                     if self.template:
                         results.extend([m.name for m in self.template.members])
@@ -495,6 +515,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         search_string = self.get_full_word()
         if search_string in self.notebook.classes:
             return self.notebook.classes[search_string].help
+
+        # we may be looking at a global
+        for g in self.notebook.globals:
+            if g.name == search_string:
+                return g.help
 
         # search for help in classes matching the search string
         member = prep_member(search_string)

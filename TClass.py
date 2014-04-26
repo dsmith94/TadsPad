@@ -6,10 +6,10 @@
 import re
 
 # regular expression patterns
-class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)", flags=re.S)
+class_pattern = re.compile("class\s(\w*):\s([\w|,|\s]*)")
 object_pattern = re.compile("(\+*\s*)(\w*):\s?([\w|,|\s]*)(\'.*\')?(\s)?(@\w*)?(\s)?")
 block_comments = re.compile("/\*.*?\*/", flags=re.S)
-method_pattern = re.compile("(\w*\((\w*)\))")
+method_pattern = re.compile("(\w*\(([\w|,|\s]*)\))")
 property_pattern = re.compile("(\w*)\s=")
 modify_pattern = re.compile("\s*modify\s(\w*)")
 
@@ -124,6 +124,23 @@ class TMethod(TMember):
         self.arguments = [item.strip() for item in self.arguments]
         if self.arguments[0] is '':
             self.arguments = []
+
+
+def get_globals(data, code):
+
+    # perform search for global methods and objects in adv3Lite library code, from string passed above
+    name = 1
+    args = 2
+    lines = code.split('\n')
+    for index, line in enumerate(lines):
+        if line:
+            m = method_pattern.match(line)
+            if m:
+
+                # we have a match-function here, add to globals data list
+                func = TMethod(name=m.group(name), line=index, arguments=m.group(args))
+                func.help = find_comments(code, index)
+                data.append(func)
 
 
 def search(data, code, pattern, filename=None):
