@@ -9,7 +9,7 @@ import Editor
 import MessageSystem
 import os.path
 import codecs
-import TClass
+import TadsParser
 import ProjectFileSystem
 import pickle
 
@@ -31,9 +31,11 @@ class Notebook(Aui.AuiNotebook):
         self.colors = os.path.join('themes', 'Obsidian.xml')
         self.size = 12
 
-        # the objects and classes
+        # the objects, classes, modifys and global tokens
         self.objects = {}
         self.classes = {}
+        self.modifys = []
+        self.global_tokens = []
 
     def __getitem__(self, index):
         if index < self.GetPageCount():
@@ -58,7 +60,7 @@ class Notebook(Aui.AuiNotebook):
 
         # no previous classes: load them
         for l in project.libraries:
-            self.classes.update(parse_library(l, path))
+            parse_library(l, path, self.classes, self.modifys, self.global_tokens)
 
         # now that the heavy lifting is done, save the classes to file
         if not os.path.exists(path):
@@ -330,11 +332,11 @@ class Notebook(Aui.AuiNotebook):
             page.editor.scheme.update_colors(page.editor)
 
 
-def parse_library(library, current_path):
+def parse_library(library, current_path, classes, modifys, global_tokens):
 
     # firstly, skip the system library
     if library == 'system':
-        return {}
+        return
 
     # parse all classes/members in the presently selected world-model library
     sources_path = os.path.join(ProjectFileSystem.get_project_root(), 'extensions', 'adv3Lite')
@@ -346,22 +348,18 @@ def parse_library(library, current_path):
     except IOError, e:
         MessageSystem.error("Could not load library source: file corrupted or not found " + e.filename,
                             "Library Read Error for " + library)
-        return {}
+        return
     lines = sources_raw.split('\n')
     source_pattern = re.compile("source:\s(.*)")
     sources = []
-    number_of_sources = 0
-    sources_index = 0
     for line in lines:
         match = source_pattern.match(line)
         if match:
             sources.append(match.group(1))
-            number_of_sources += 1
 
     # we've collected all the source files from library, open each one
-    classes = {}
-    load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=number_of_sources)
-    for source in sources:
+    load_dlg = wx.ProgressDialog('Building references, please wait...', 'Search source code', maximum=len(sources))
+    for index, source in enumerate(sources):
 
         # if a path doesn't exist in the source string, add one
         if '/' in source:
@@ -370,15 +368,13 @@ def parse_library(library, current_path):
             path = os.path.join(sources_path, source + ".t")
 
         # open and read source code file
-        with open(path, 'rU') as code_file:
-            code = code_file.read()
-            load_dlg.Update(sources_index, source + ".t")
-            classes.update(TClass.extract(code))
-        sources_index += 1
-    TClass.cross_reference(classes)
-    TClass.cross_reference(classes)
+        TadsParser.search(path, classes, modifys, global_tokens)
+        load_dlg.Update(index, source + ".t")
+
     load_dlg.Destroy()
-    return classes
+
+    # now apply the modifys we just loaded
+    [classes[m.name].members.update(m.members) for m in modifys if m.name in classes]
 
 
 __author__ = 'dj'

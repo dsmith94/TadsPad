@@ -2,7 +2,7 @@
 import wx
 import codecs
 import MessageSystem
-import TClass
+import TadsParser
 
 
 
@@ -60,7 +60,6 @@ class ObjectBrowser(wx.ListCtrl):
         # loop through all files in project, and get objects in each
         files = wx.GetTopLevelParent(self).project.files
         path = wx.GetTopLevelParent(self).project.path
-        master = ''
         for file_name in files:
             try:
                 with codecs.open(path + "/" + file_name, 'rU', "utf-8") as f:
@@ -68,21 +67,20 @@ class ObjectBrowser(wx.ListCtrl):
             except IOError, e:
                 MessageSystem.error("Could not load file: " + e.filename, "File read error")
 
-            # if the file can be read, update objects from the file
+            # if the file can be read, update modifys objects from the file
             else:
                 if file_contents:
-                    master += file_contents
-                    TClass.search(self.notebook.objects, file_contents, "object", file_name)
-                    for o in self.notebook.objects.values():
-
-                        # update members in objects
-                        TClass.get_all_object_members(o, self.notebook.classes)
-
-        # update classes which contain 'modify' keyword
-        TClass.modify(master, self.notebook.classes)
+                    self.notebook.modifys.extend(TadsParser.modify_search(file_contents, file_name))
+                    self.notebook.objects.update(TadsParser.object_search(TadsParser.clean(file_contents), file_name))
 
         # now update the notebook objects list box
+        for o in self.notebook.objects.values():
+
+            # update members in objects
+            o.members = TadsParser.get_members(o.inherits, self.notebook.classes, self.notebook.modifys)
+
+        # and finally add to display box
         for index, o in enumerate(sorted(self.notebook.objects.iterkeys(), key=lambda s: s.lower())):
             self.InsertStringItem(index, self.notebook.objects[o].name)
-            self.SetStringItem(index, 1, str(self.notebook.objects[o].file))
+            self.SetStringItem(index, 1, str(self.notebook.objects[o].filename))
             self.SetStringItem(index, 2, str(self.notebook.objects[o].line))

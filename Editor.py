@@ -3,7 +3,7 @@
 
 import wx
 import wx.stc
-import TClass
+import TadsParser
 import re
 import codecs
 import atd
@@ -28,8 +28,7 @@ function_suggestions = (u"finishGameMsg(msg, extra)", u"finishGame()")
 endgame_suggestions = (u"ftDeath", u"ftVictory")
 
 # default theme if file won't load for some reason
-default_theme = """
-<?xml version="1.0" encoding="utf-8"?>
+default_theme = u"""
 <colorTheme id="21" name="Obsidian" modified="2011-02-01 16:43:47" author="Morinar">
     <searchResultIndication color="#616161" />
     <filteredSearchResultIndication color="#616161" />
@@ -172,6 +171,8 @@ class ColorSchemer:
             self.colors = tree.getroot()
         except IOError, e:
             MessageSystem.error("Could not locate file: " + e.filename, "Theme Change Unsuccessful")
+            tree = ET.ElementTree(ET.fromstring(default_theme))
+            self.colors = tree.getroot()
 
     def update_colors(self, ctrl):
 
@@ -408,9 +409,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 # not already in object cache, find inherited classes
                 classes = re.search(": ([\w|,|\s]*)", line)
                 if classes:
-                    self.template = TClass.TClass()
-                    self.template.inherits = TClass.inherited(classes.group(1))
-                    TClass.get_all_object_members(self.template, self.notebook.classes)
+                    self.template = TadsParser.TClass()
+                    self.template.inherits = [i.strip() for i in classes.group(1).split(u',')]
+                    self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
                     return
 
         # otherwise, look for pluses
@@ -419,9 +420,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
                 classes = re.search("\+\s([\w|,|\s]*)", line)
                 if classes:
-                    self.template = TClass.TClass()
-                    self.template.inherits = TClass.inherited(classes.group(1))
-                    TClass.get_all_object_members(self.template, self.notebook.classes)
+                    self.template = TadsParser.TClass()
+                    self.template.inherits = [i.strip() for i in classes.group(1).split(u',')]
+                    self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
                     return
 
     def auto_complete(self):

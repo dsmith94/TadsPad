@@ -6,7 +6,7 @@
 
 import wx
 import ProjectFileSystem
-import TClass
+import TadsParser
 
 
 class Window(wx.Frame):

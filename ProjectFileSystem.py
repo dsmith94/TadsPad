@@ -188,15 +188,21 @@ class NewProjectWindow(wx.Dialog):
         # when custom checkbox is clicked, ungray (or gray) extensions box
         self.extensions.Enabled = self.custom.GetValue()
 
+        # if the extensions are enabled, everything not in adv3lite is checked by default
+        if self.extensions.Enabled:
+            for index, text in enumerate(self.extensions.GetStrings()):
+                if '/' not in text:
+                    self.extensions.Check(index)
+
 
 def get_project_root():
 
     # get root directory for project folder
     # check first that the folder exists
     if os.path.exists(os.path.expanduser("~/documents")):
-	    path = os.path.join(os.path.expanduser("~/documents"), 'TADS 3')
+        path = os.path.join(os.path.expanduser("~/documents"), 'TADS 3')
     else:
-	    path = os.path.join(os.path.expanduser("~/Documents"), 'TADS 3')
+        path = os.path.join(os.path.expanduser("~/Documents"), 'TADS 3')
 
     if os.path.exists(path) is False:
 
