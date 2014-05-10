@@ -12,6 +12,7 @@ import codecs
 import TadsParser
 import ProjectFileSystem
 import pickle
+import embedded
 
 
 class Notebook(Aui.AuiNotebook):
@@ -28,14 +29,14 @@ class Notebook(Aui.AuiNotebook):
         #self.Bind(Aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.on_page_changed)
 
         # editor colors and text size
-        self.colors = os.path.join('themes', 'Obsidian.xml')
+        self.colors = os.path.join(self.GetTopLevelParent().themes_path, 'Obsidian.xml')
         self.size = 12
 
         # the objects, classes, modifys and global tokens
         self.objects = {}
         self.classes = {}
         self.modifys = []
-        self.global_tokens = []
+        self.global_tokens = {}
 
     def __getitem__(self, index):
         if index < self.GetPageCount():
@@ -48,17 +49,21 @@ class Notebook(Aui.AuiNotebook):
         # load adv3lite/r worldmodel classes from file
         root = ProjectFileSystem.get_project_root()
         path = os.path.join(root, project.name)
-        if os.path.exists(os.path.join(path, "classes.dat")):
+        if os.path.exists(os.path.join(path, "classes.dat")) and os.path.exists(os.path.join(path, "globals.dat")):
 
             # it exists! load file so we get previously used class resources
             try:
                 with open(os.path.join(path, "classes.dat"), 'rb') as the_file:
                     self.classes = pickle.load(the_file)
+                with open(os.path.join(path, "globals.dat"), 'rb') as the_file:
+                    self.global_tokens = pickle.load(the_file)
             except IOError:
                 MessageSystem.error("Could not read file: " + path, path + " corrupted")
             return
 
         # no previous classes: load them
+        self.classes = {}
+        self.global_tokens = {}
         for l in project.libraries:
             parse_library(l, path, self.classes, self.modifys, self.global_tokens)
 
@@ -66,9 +71,10 @@ class Notebook(Aui.AuiNotebook):
         if not os.path.exists(path):
             os.makedirs(path)
         try:
-            output = open(os.path.join(path, "classes.dat"), 'wb')
-            pickle.dump(self.classes, output)
-            output.close()
+            with open(os.path.join(path, "classes.dat"), 'wb') as output:
+                pickle.dump(self.classes, output)
+            with open(os.path.join(path, "globals.dat"), 'wb') as output:
+                pickle.dump(self.global_tokens, output)
         except IOError, e:
             MessageSystem.error("Could not save file: " + e.filename, "File write error")
 
@@ -190,7 +196,7 @@ class Notebook(Aui.AuiNotebook):
 
         if name not in the_project.files:
             try:
-                the_project.new_file("blank", name + ".t")
+                the_project.new_file(embedded.blank, name + ".t")
             except IOError, e:
                 MessageSystem.error("Cannot add file: " + name, e.message)
             else:
@@ -368,7 +374,10 @@ def parse_library(library, current_path, classes, modifys, global_tokens):
             path = os.path.join(sources_path, source + ".t")
 
         # open and read source code file
+        # only get globals from misc.t, there're all we need
         TadsParser.search(path, classes, modifys, global_tokens)
+
+        # update dialog onscreen
         load_dlg.Update(index, source + ".t")
 
     load_dlg.Destroy()

@@ -77,7 +77,7 @@ def search(filename, final_classes, final_modifys, final_globals):
 
     classes = {}
     modifys = []
-    global_objects = []
+    global_objects = {}
 
     # open filename, harvest data from buffer
     with open(filename, 'rU') as fb:
@@ -90,7 +90,7 @@ def search(filename, final_classes, final_modifys, final_globals):
     # add to our collective classes, modifys, global objects
     final_classes.update(classes)
     final_modifys.extend(modifys)
-    final_globals.extend(global_objects)
+    final_globals.update(global_objects)
 
 
 def global_search(cleaned, uncleaned, filename, classes, modifys, globals_vars):
@@ -117,13 +117,11 @@ def global_search(cleaned, uncleaned, filename, classes, modifys, globals_vars):
     for index, line in enumerate(lines):
 
         # skip all those silly defines and replacers and classes
-        continue_loop = True
-        for token in skip:
-            if token in line:
-                continue_loop = False
+        if any(token in line for token in skip):
+            continue
 
         # anything left should be a global
-        if line and continue_loop:
+        if line:
             if line[0].isalnum():
 
                 # literally anything else should be a global
@@ -140,7 +138,7 @@ def global_search(cleaned, uncleaned, filename, classes, modifys, globals_vars):
                     new.filename = filename
                     new.line = index
                     new.help = __get_documentation(uncleaned, new.line)
-                    globals_vars.append(new)
+                    globals_vars[new.name] = new
 
 
 def modify_search(code, filename):
@@ -336,7 +334,7 @@ def __member_search(lines):
         # look for equals sign (for members) or parenths (for methods)
         line = line.strip()
         line = line.replace(u' ', u'')
-        if u'=' in line:
+        if u'=' in line and u'(' not in line and u')' not in line:
 
             # we've found a member, add it to our results dict
             new = TMember()

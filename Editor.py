@@ -10,6 +10,7 @@ import atd
 import SpellCheckerWindow
 import MessageSystem
 import os
+import embedded
 import xml.etree.ElementTree as ET
 
 # english defaults for verify, check
@@ -27,55 +28,6 @@ verify_suggestions = (u"logicalRank(rank, key);", u"dangerous", u"illogicalNow(m
 function_suggestions = (u"finishGameMsg(msg, extra)", u"finishGame()")
 endgame_suggestions = (u"ftDeath", u"ftVictory")
 
-# default theme if file won't load for some reason
-default_theme = u"""
-<colorTheme id="21" name="Obsidian" modified="2011-02-01 16:43:47" author="Morinar">
-    <searchResultIndication color="#616161" />
-    <filteredSearchResultIndication color="#616161" />
-    <occurrenceIndication color="#616161" />
-    <writeOccurrenceIndication color="#616161" />
-    <findScope color="#E0E2E4" />
-    <deletionIndication color="#E0E2E4" />
-    <sourceHoverBackground color="#FFFFFF" />
-    <singleLineComment color="#7D8C93" />
-    <multiLineComment color="#7D8C93" />
-    <commentTaskTag color="#FF8BFF" />
-    <javadoc color="#7D8C93" />
-    <javadocLink color="#678CB1" />
-    <javadocTag color="#E0E2E4" />
-    <javadocKeyword color="#A082BD" />
-    <class color="#678CB1" />
-    <interface color="#678CB1" />
-    <method color="#678CB1" />
-    <methodDeclaration color="#E8E2B7" />
-    <bracket color="#E8E2B7" />
-    <number color="#FFCD22" />
-    <string color="#EC7600" />
-    <operator color="#E8E2B7" />
-    <keyword color="#93C763" />
-    <annotation color="#A082BD" />
-    <staticMethod color="#E0E2E4" />
-    <localVariable color="#E0E2E4" />
-    <localVariableDeclaration color="#E0E2E4" />
-    <field color="#678CB1" />
-    <staticField color="#678CB1" />
-    <staticFinalField color="#E0E2E4" />
-    <deprecatedMember color="#E0E2E4" />
-    <enum color="#E0E2E4" />
-    <inheritedMethod color="#E0E2E4" />
-    <abstractMethod color="#E0E2E4" />
-    <parameterVariable color="#E0E2E4" />
-    <typeArgument color="#E0E2E4" />
-    <typeParameter color="#E0E2E4" />
-    <constant color="#A082BD" />
-    <background color="#293134" />
-    <currentLine color="#2F393C" />
-    <foreground color="#E0E2E4" />
-    <lineNumber color="#81969A" />
-    <selectionBackground color="#804000" />
-    <selectionForeground color="#E0E2E4" />
-</colorTheme>
-"""
 
 # colors to tags list
 text_styles = (("STC_STYLE_LINENUMBER", 'lineNumber'),
@@ -116,11 +68,13 @@ pattern_classes = re.compile(": ([\w*|,|\s])*")
 
 # code analysis filter system
 # use these presets to analyze a block of code for suggestions
-analyzer = (verify_token, verify_suggestions, {'objects': None, 'self': None}), \
-           (action_token, None, {'objects': None, 'self': None}), \
-           (check_token, None, {'objects': None, 'self': None}), \
-           (".", None, {'members': None}), (":", None, {'classes': None}), \
-           ('@', None, {'objects': None}), \
+# note the analyzer can be broken down into three parts:
+# 1. the enclosure, 2. the suggestions for the enclosure, and 3. special flags for the enclosure
+analyzer = (verify_token, verify_suggestions, ('objects', 'self')), \
+           (action_token, None, ('objects', 'self')), \
+           (check_token, None, ('objects', 'self')), \
+           (".", None, 'members'), (":", None, 'classes'), \
+           ('@', None, 'objects'), \
            (direct_token, inObj_suggestions, {}), \
            (indirect_token, inObj_suggestions, {}), \
            (remap_direct_token, None, {'self': None, 'filter': [direct_token, indirect_token], 'prefix': 'as'})
@@ -128,7 +82,7 @@ analyzer = (verify_token, verify_suggestions, {'objects': None, 'self': None}), 
 # defaults when editing outside a template
 outside_template = u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class"
 
-# reserved keywords
+# reserved keywords for tads language
 reserved_words = ("break", "case", "catch", "class", "case", "continue", "do", "default", "delete", "else", "enum",
                   "finally", "for", "foreach", "function", "goto", "if", "intrinsic", "local", "modify", "new", "nil",
                   "property", "replace", "return", "self", "switch", "throw", "token", "true", "try", "while", "end")
@@ -145,11 +99,12 @@ class ColorSchemer:
         self.colors = None
 
         # attempt to load default color config
+        path = MessageSystem.MainWindow.get_instance().themes_path
         try:
-            self.load_colors(os.path.join('themes', 'Obsidian.xml'))
+            self.load_colors(os.path.join(path, "Obsidian.xml"))
         except Exception, e:
             print ("Could not load default theme - Obsidian.xml, using built-in default")
-            tree = ET.ElementTree(ET.fromstring(default_theme))
+            tree = ET.ElementTree(ET.fromstring(embedded.obsidian))
             self.colors = tree.getroot()
 
     def set_color(self, color, tag, dictionary):
@@ -171,7 +126,7 @@ class ColorSchemer:
             self.colors = tree.getroot()
         except IOError, e:
             MessageSystem.error("Could not locate file: " + e.filename, "Theme Change Unsuccessful")
-            tree = ET.ElementTree(ET.fromstring(default_theme))
+            tree = ET.ElementTree(ET.fromstring(embedded.obsidian))
             self.colors = tree.getroot()
 
     def update_colors(self, ctrl):
@@ -294,7 +249,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if event.GetKey() == 34:
             self.replace_with_enclosure(u"\" \"")
         if event.GetKey() == 39:
-            self.replace_with_enclosure(u"\' \'")
+            self.replace_with_enclosure(u"\'\'")
 
         # handle autocompletion too
         self.auto_complete()
@@ -467,17 +422,17 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 if suggestions:
                     results.extend(suggestions)
                 if 'classes' in flags:
-                    results = self.notebook.classes.keys()
+                    results = self.notebook.classes
                 if 'members' in flags:
                     members = self.find_object_methods(full_line[:caret])
                     if members:
                         results = members
                 if 'objects' in flags:
-                    results.extend(self.notebook.objects.keys())
-                    #results.extend(self.notebook.globals)
+                    results.extend(self.notebook.objects)
+                    results.extend(self.notebook.global_tokens)
                 if 'self' in flags:
                     if self.template:
-                        results.extend([m.name for m in self.template.members])
+                        results.extend(m.name for m in self.template.members)
                 if 'filter' in flags:
                     results = [r for f in flags['filter'] for r in results if f in r]
                 if 'prefix' in flags:
@@ -487,7 +442,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if not results:
             if self.template:
                 results.extend([m.name for m in self.template.members])
-                results.extend(self.notebook.objects.keys())
+                results.extend(self.notebook.objects)
             else:
                 results = outside_template
 
@@ -517,13 +472,19 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if search_string in self.notebook.classes:
             return self.notebook.classes[search_string].help
 
-        # we may be looking at a global
-        for g in self.notebook.globals:
-            if g.name == search_string:
-                return g.help
-
         # search for help in classes matching the search string
         member = prep_member(search_string)
+
+        # we may be looking at a global
+        if u'(' in search_string:
+            global_token = (g.help for g in self.notebook.global_tokens.values() if u'(' in g.name
+                            if search_string[:search_string.find(u'(')] == g.name[:g.name.find(u'(')]).next()
+            if global_token:
+                return global_token
+        else:
+            global_token = (g.help for g in self.notebook.global_tokens.values() if search_string == g.name).next()
+            if global_token:
+                return global_token
 
         # search current line for help data
         full_line, caret = self.GetCurLine()
@@ -561,7 +522,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def save(self, path, filename):
 
         # save contents of editor to file
-        #self.fix_indents()
         try:
             with codecs.open(path + "/" + filename, 'w', "utf-8") as f:
                 f.write(self.Text)
@@ -704,7 +664,6 @@ def word_boundary(char):
 
     if char.isspace():
         return True
-    # separators = '.', '[', ']', '{', '}', '(', ')'
     separators = '.', '[', ']', '{', '}'
     if char in separators:
         return True

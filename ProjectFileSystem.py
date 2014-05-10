@@ -10,6 +10,8 @@ import MessageSystem
 import unicodedata
 import string
 import hashlib
+import embedded
+import codecs
 from binascii import hexlify
 
 
@@ -33,27 +35,20 @@ class TadsProject():
 
         # write makefile, for compilation process
         path_string = os.path.join(get_project_root(), self.name)
-        file_text = None
+        text = embedded.makefile
+        text = text.replace('$NAME$', self.name)
+        files = "\n-source "
+        files += "\n-source ".join([f[:-2] for f in self.files])
+        text = text.replace('$SOURCE$', files)
+        libraries = "\n-lib "
+        libraries += "\n-lib ".join(self.libraries)
+        text = text.replace('$LIBRARY$', libraries)
         try:
-            with open("./makefile.tmp", 'rU') as f:
-                file_text = f.read()
+            with open(os.path.join(path_string, self.name + ".t3m"), 'w') as finished:
+                finished.write(text)
         except IOError, er:
-            MessageSystem.error("Could not read makefile template. Error:" + er.filename,
-                                "Failed to read makefile.tmp")
-        if file_text:
-            file_text = file_text.replace('$NAME$', self.name)
-            files = "\n-source "
-            files += "\n-source ".join([f[:-2] for f in self.files])
-            file_text = file_text.replace('$SOURCE$', files)
-            libraries = "\n-lib "
-            libraries += "\n-lib ".join(self.libraries)
-            file_text = file_text.replace('$LIBRARY$', libraries)
-            try:
-                with open(os.path.join(path_string, self.name + ".t3m"), 'w') as finished:
-                    finished.write(file_text)
-            except IOError, er:
-                MessageSystem.error("Could not write data to file. Error:" + er.filename,
-                                    "Failed to create makefile")
+            MessageSystem.error("Could not write data to file. Error:" + er.filename,
+                                "Failed to create makefile")
 
     def write_library(self, sources):
 
@@ -69,26 +64,20 @@ class TadsProject():
             MessageSystem.error("Could not write custom library for " + self.name,
                                 "Error writing library file " + e.filename)
 
-    def new_file(self, name, dest):
+    def new_file(self, template, dest):
 
         # create a new file for project, with tokens changed to match current project config
         # use tokens from phrases string
+        text = template
+        for old, new in self.phrases:
+            text = text.replace(old, new)
+        text = text.replace("$FILENAME$", dest)
+        text = text.replace("$TITLE$", self.name)
         try:
-            with open("./" + name + ".tmp", 'rU') as f:
-                text = f.read()
+            with codecs.open(os.path.join(self.path, dest), 'w', "utf-8") as f:
+                f.write(text)
         except IOError, e:
-            MessageSystem.error("Could not retrieve data from file: " + e.filename,
-                                "File Read Failure")
-        else:
-            for old, new in self.phrases:
-                text = text.replace(old, new)
-            text = text.replace("$FILENAME$", dest)
-            text = text.replace("$TITLE$", self.name)
-            try:
-                with open(os.path.join(self.path, dest), 'w') as final_file:
-                    final_file.write(text)
-            except IOError, e:
-                MessageSystem.error("Could not write file: " + e.filename, "File Write Failure")
+            MessageSystem.error("Could not write file: " + e.filename, "File Write Failure")
 
 
 def remove_disallowed_filename_chars(filename):
@@ -309,8 +298,8 @@ def new_project(the_project):
                           ('$IFID$', generate_ifid(the_project.author + the_project.title)),
                           ('$DESC$', convert_html(the_project.htmldesc)), ('$HTMLDESC$', the_project.htmldesc),
                           ('$EMAIL$', the_project.email))
-    the_project.new_file("start", 'start.t')
-    the_project.new_file("ignore", "ignore.txt")
+    the_project.new_file(embedded.start, 'start.t')
+    the_project.new_file(embedded.ignore, "ignore.txt")
 
 
 __author__ = 'dj'

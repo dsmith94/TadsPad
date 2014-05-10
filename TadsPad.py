@@ -20,6 +20,7 @@ import os
 import sys
 import shutil
 import LibraryConfigWindow
+import embedded
 
 
 def is_64_windows():
@@ -69,15 +70,20 @@ class MainWindow(wx.Frame):
         self.config_path = ""
         if sys.platform == 'win32':
             self.config_path = os.path.join(os.getenv('APPDATA'), "tadspad", "prefs.dat")
+            self.themes_path = os.path.join(os.getenv('APPDATA'), "tadspad", "themes/")
             self.preferences["tadspath"] = os.path.join(get_program_files_32(), "TADS 3", "t3make.exe")
             self.preferences["terp"] = os.path.join(get_program_files_32(), "TADS 3", "htmlt3.exe")
         else:
             self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.dat")
+            self.themes_path = os.path.join(os.path.expanduser("~"), "tadspad", "themes/")
             self.preferences["tadspath"] = "t3make"
             self.preferences["terp"] = "frobtads"
 
         # figure out default terminal by platform
         self.preferences["terminal"] = get_terminal()
+
+        # build themes directory if it doesn't exist
+        self.find_themes()
 
         # build main user interface
         BuildMainUi.init(self)
@@ -435,6 +441,22 @@ class MainWindow(wx.Frame):
         else:
             self.mgr.GetPane('project').Show()
         self.mgr.Update()
+
+    def find_themes(self):
+
+        # check for existence of themes
+        if not os.path.exists(self.themes_path):
+
+            # path doesnt exist, make path and create themes files
+            os.makedirs(self.themes_path)
+            files = (("Obsidian.xml", embedded.obsidian),
+                     ("Mr.xml", embedded.mr),
+                     ("Minimal.xml", embedded.minimal),
+                     ("Solarized.xml", embedded.solarized),
+                     ("Pastel.xml", embedded.pastel))
+            for filename, data in files:
+                with open(os.path.join(self.themes_path, filename), 'w') as f:
+                    f.write(data.strip())
 
     def new_project_window(self):
 
