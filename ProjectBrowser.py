@@ -19,7 +19,13 @@ class ContextMenu(wx.Menu):
         # build context menu
         self.rename = wx.MenuItem(self, wx.ID_ANY, 'Rename')
         self.AppendItem(self.rename)
+        self.remove = wx.MenuItem(self, wx.ID_ANY, 'Remove from Project')
+        self.AppendItem(self.remove)
+        self.delete = wx.MenuItem(self, wx.ID_ANY, 'Delete')
+        self.AppendItem(self.delete)
         self.Bind(wx.EVT_MENU, parent.rename, self.rename)
+        self.Bind(wx.EVT_MENU, parent.remove, self.remove)
+        self.Bind(wx.EVT_MENU, parent.delete, self.delete)
 
 
 class ProjectBrowser(wx.ListCtrl):
@@ -44,6 +50,47 @@ class ProjectBrowser(wx.ListCtrl):
         # do this by calling the notebook
         file_name = event.GetText()
         self.object_browser.notebook.find_page(file_name)
+
+    def remove(self, event):
+
+        # remove selected file from project
+        index = self.GetFirstSelected()
+        project = self.GetTopLevelParent().project
+        files = project.files
+        go_ahead = MessageSystem.ask("Really remove " + files[index] + " from project?", "Remove file from project")
+        if go_ahead:
+
+            # we have confirmed to remove file from project - do it
+            name = files.pop(index)
+            self.object_browser.rebuild_object_catalog()
+            self.update_files()
+            for i in xrange(self.object_browser.notebook.GetPageCount()):
+                if self.object_browser.notebook.GetPageText(i).strip('* ') == name:
+                    self.object_browser.notebook.DeletePage(i)
+            self.object_browser.notebook.Refresh()
+            self.object_browser.notebook.Update()
+
+    def delete(self, event):
+
+        # remove selected file from project
+        # then delete file
+        index = self.GetFirstSelected()
+        project = self.GetTopLevelParent().project
+        files = project.files
+        go_ahead = MessageSystem.ask("Really permanently delete " + files[index] + " from project?", "Delete file")
+        if go_ahead:
+
+            # we have confirmed to remove file from project - do it
+            name = files.pop(index)
+            self.object_browser.rebuild_object_catalog()
+            self.update_files()
+            for i in xrange(self.object_browser.notebook.GetPageCount()):
+                if self.object_browser.notebook.GetPageText(i).strip('* ') == name:
+                    self.object_browser.notebook.DeletePage(i)
+            self.object_browser.notebook.Refresh()
+            self.object_browser.notebook.Update()
+            path = os.path.join(ProjectFileSystem.get_project_root(), project.name)
+            os.remove(os.path.join(path, name))
 
     def rename(self, event):
 
@@ -86,7 +133,6 @@ class ProjectBrowser(wx.ListCtrl):
         # fire context menu when a file is selected
         if self.GetFirstSelected() > -1:
             self.PopupMenu(ContextMenu(self), event.GetPosition())
-
 
     def update_files(self):
 

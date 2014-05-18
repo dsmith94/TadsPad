@@ -77,6 +77,7 @@ class Notebook(Aui.AuiNotebook):
                 pickle.dump(self.global_tokens, output)
         except IOError, e:
             MessageSystem.error("Could not save file: " + e.filename, "File write error")
+            return
 
     def close_all(self):
 
@@ -384,6 +385,10 @@ def parse_library(library, current_path, classes, modifys, global_tokens):
 
     # now apply the modifys we just loaded
     [classes[m.name].members.update(m.members) for m in modifys if m.name in classes]
+
+    # and our inherits
+    for c in classes.values():
+        c.inherits.extend(TadsParser.inherit_search(c, classes))
 
 
 __author__ = 'dj'

@@ -2,20 +2,16 @@
 # welcome to tadspad box - used to get user input when starting tadspad (w/o a prev project found)
 
 import wx
+import embedded
 import random
 
 
 def get_tips():
 
     # load tips from default location (same dir)
-    with open('./tips.txt', 'rU') as tips_file:
-        text = tips_file.read()
-        if text:
-            tips = text.split('\n')
-            random.shuffle(tips)
-            return "Tip of the day: \n" + tips[0]
-    return "No tips available. "
-
+    tips = embedded.tips.split('\n')
+    random.shuffle(tips)
+    return "Tip of the day: \n" + tips[0]
 
 class Box(wx.Dialog):
     def __init__(self, preferences):

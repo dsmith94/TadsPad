@@ -284,6 +284,7 @@ def convert_html(s):
 
     return text
 
+
 def new_project(the_project):
 
     # create new project

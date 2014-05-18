@@ -41,7 +41,6 @@ def create_message_pane(top_window):
     top_window.message_book.Update()
 
 
-
 def create_object_browser(top_window):
 
     # show object browser and project browser

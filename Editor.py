@@ -234,22 +234,23 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # when bracket is added, autoadd matching close bracket
         if event.GetKey() == 123:
             self.AutoCompCancel()
+            indent = self.GetLineIndentation(self.GetCurrentLine())
             self.SetAnchor(self.GetAnchor() - 1)
             self.SetCurrentPos(self.GetCurrentPos())
             self.ReplaceSelection(u"\n{\n\n}")
             line = self.GetCurrentLine()
-            indent = self.GetLineIndentation(line + 1)
-            self.SetLineIndentation(line - 2, indent + (self.GetIndent() * 1))
-            self.SetLineIndentation(line - 1, indent + (self.GetIndent() * 2))
-            self.SetLineIndentation(line, indent + (self.GetIndent() * 1))
-            self.SetAnchor(self.GetAnchor() - (indent + self.GetIndent() + 2))
-            self.SetCurrentPos(self.GetCurrentPos() - (indent + self.GetIndent() + 2))
+            self.SetLineIndentation(line - 2, indent)
+            self.SetLineIndentation(line - 1, indent + (self.GetIndent()))
+            self.SetLineIndentation(line, indent)
+            new_position = self.PositionFromLine(line) - 1
+            self.SetAnchor(new_position)
+            self.SetCurrentPos(new_position)
 
         # when quotes added, autoadd quotes
         if event.GetKey() == 34:
             self.replace_with_enclosure(u"\" \"")
-        if event.GetKey() == 39:
-            self.replace_with_enclosure(u"\'\'")
+        #if event.GetKey() == 39:
+        #    self.replace_with_enclosure(u" \'\'")
 
         # handle autocompletion too
         self.auto_complete()
@@ -336,49 +337,21 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # determine if caret is presently editing an object template
         # first clip out a few lines nearest the ; and the cursor
-        end = self.Text.rfind('\n', 0, self.GetCurrentPos())
-        start = self.Text.rfind('\n;\n', 0, end)
+        code = TadsParser.clean(self.Text)
+        end = code.rfind('\n', 0, self.GetCurrentPos())
+        start = code.rfind('\n;\n', 0, end)
         if start < 0:
             start = 1
-        if end >= len(self.Text):
-            end = len(self.Text) - 1
-        line = (l.strip('+ ') for l in reversed(self.Text[start:end].split('\n')) if l if l[0] != ' ').next()
+        if end >= len(code):
+            end = len(code) - 1
+        line = (l.strip('+ ') for l in reversed(code[start:end].split('\n')) if l if l[0] != ' ').next()
 
-        # we've got our lines, search for object template
-        if line == ';':
-
-            # we're not in a template
-            self.template = None
-            return
-
-        # object template definition found here by looking for :
-        if ':' in line:
-            obj = line[:line.find(":")]
-
-            # we are presently in an object template, get data on it
-            if obj in self.notebook.objects:
-                self.template = self.notebook.objects[obj]
-
-            else:
-
-                # not already in object cache, find inherited classes
-                classes = re.search(": ([\w|,|\s]*)", line)
-                if classes:
-                    self.template = TadsParser.TClass()
-                    self.template.inherits = [i.strip() for i in classes.group(1).split(u',')]
-                    self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
-                    return
-
-        # otherwise, look for pluses
-        if len(line) > 2:
-            if line[0] == '+' or line[1] == '+':
-
-                classes = re.search("\+\s([\w|,|\s]*)", line)
-                if classes:
-                    self.template = TadsParser.TClass()
-                    self.template.inherits = [i.strip() for i in classes.group(1).split(u',')]
-                    self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
-                    return
+        # we might have a template, search for it
+        inherits = TadsParser.get_inherits(line)
+        if inherits:
+            self.template = TadsParser.TClass()
+            self.template.inherits = inherits
+            self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
 
     def auto_complete(self):
 
@@ -441,7 +414,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # still no results, figure out if we're in a object template
         if not results:
             if self.template:
-                results.extend([m.name for m in self.template.members])
+                results.extend([m.name for m in self.template.members if hasattr(m, 'name')])
                 results.extend(self.notebook.objects)
             else:
                 results = outside_template
@@ -476,15 +449,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         member = prep_member(search_string)
 
         # we may be looking at a global
-        if u'(' in search_string:
-            global_token = (g.help for g in self.notebook.global_tokens.values() if u'(' in g.name
-                            if search_string[:search_string.find(u'(')] == g.name[:g.name.find(u'(')]).next()
-            if global_token:
-                return global_token
-        else:
-            global_token = (g.help for g in self.notebook.global_tokens.values() if search_string == g.name).next()
-            if global_token:
-                return global_token
+        global_token = find_global_token(search_string, self.notebook.global_tokens.values())
+        if global_token:
+            return global_token
 
         # search current line for help data
         full_line, caret = self.GetCurLine()
@@ -493,12 +460,17 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             the_object = tokens[-1].split(".")[0]
             if the_object:
                 if the_object in self.notebook.objects:
-                    return next(m.help for m in self.notebook.objects[the_object].members if member == prep_member(m.name))
+                    for m in self.notebook.objects[the_object].members:
+                        if member == prep_member(m.name):
+                            return m.help
 
         # search by current object template
         self.find_object_template()
         if self.template:
-            return next((m.name + ": " + m.help) for m in self.template.members if search_string == prep_member(m.name) if m.help != "")
+            for m in self.template.members:
+                if search_string == prep_member(m.name):
+                    if m.help:
+                        return m.name + ": " + m.help
 
     def update_ui(self, event):
 
@@ -707,29 +679,6 @@ def filter_suggestions(token, suggestions):
     return return_value
 
 
-def clean_string(code):
-
-    # return a string of code with strings, quotes, and bracketed code removed
-
-    # describe all patterns to remove
-    remove_patterns = pattern_line_comments, pattern_block_comments, pattern_double_quotes, pattern_single_quotes
-
-    # remove all matching patterns to produced a cleaned string, easy to search
-    removed_strings = code
-    removed_strings = removed_strings.replace("\\\"", "")
-    removed_strings = removed_strings.replace("\\'", "")
-    removed_strings = removed_strings.replace("\r", "\n")
-    for pattern in remove_patterns:
-        removed_strings = pattern.sub("", removed_strings)
-
-    # remove bracketed enclosures
-    # when on the return, the lines are reversed, for easier for loop searching
-    removed_strings = pattern_enclosure.sub("{", removed_strings)
-    removed_strings = remove_bracketed_enclosures(removed_strings)
-
-    return removed_strings
-
-
 def prep_member(member):
 
     # prepare member passed above for help system comparison
@@ -742,6 +691,26 @@ def prep_member(member):
             break
         return_value += c
     return return_value
+
+
+def find_global_token(search_string, tokens):
+
+    """
+    Get global token from text, return None otherwise if not exists
+    """
+
+    # find global token in text
+    if u'(' in search_string:
+        for g in tokens:
+            if u'(' in g.name:
+                if search_string[:search_string.find(u'(')] == g.name[:g.name.find(u'(')]:
+                    return g.help
+    else:
+        for g in tokens:
+            if search_string == g.name:
+                return g.help
+    return None
+
 
 def search(code, line):
 
@@ -762,6 +731,30 @@ def search(code, line):
         return [remap_direct_token]
     tokens = verify_token, action_token, check_token, direct_token, indirect_token
     return [t for t in tokens if t in code]
+
+
+def clean_string(code):
+
+    # return a string of code with strings, quotes, and bracketed code removed
+    # note that this is a specialty cleaning function, and CANNOT be replace by TadsParser.clean, which is
+    # somewhat similiar
+
+    # describe all patterns to remove
+    remove_patterns = pattern_line_comments, pattern_block_comments, pattern_double_quotes, pattern_single_quotes
+
+    # remove all matching patterns to produced a cleaned string, easy to search
+    removed_strings = code
+    removed_strings = removed_strings.replace("\\\"", "")
+    removed_strings = removed_strings.replace("\\'", "")
+    removed_strings = removed_strings.replace("\r", "\n")
+    for pattern in remove_patterns:
+        removed_strings = pattern.sub("", removed_strings)
+
+    # remove bracketed enclosures
+    removed_strings = pattern_enclosure.sub("{", removed_strings)
+    removed_strings = remove_bracketed_enclosures(removed_strings)
+
+    return removed_strings
 
 
 __author__ = 'dj'

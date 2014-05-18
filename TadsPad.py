@@ -77,7 +77,7 @@ class MainWindow(wx.Frame):
             self.config_path = os.path.join(os.path.expanduser("~"), "tadspad", "prefs.dat")
             self.themes_path = os.path.join(os.path.expanduser("~"), "tadspad", "themes/")
             self.preferences["tadspath"] = "t3make"
-            self.preferences["terp"] = "frobtads"
+            self.preferences["terp"] = "frob"
 
         # figure out default terminal by platform
         self.preferences["terminal"] = get_terminal()
@@ -115,27 +115,42 @@ class MainWindow(wx.Frame):
     def undo(self, event):
 
         # undo last adjustment in text in the notebook
-        self.notebook.undo()
+        try:
+            self.notebook.undo()
+        except IndexError, e:
+            MessageSystem.error("Cannot perform undo action: must have an opened code tab.", e.message)
 
     def cut(self, event):
 
         # clipboard cut
-        self.notebook.cut()
+        try:
+            self.notebook.cut()
+        except IndexError, e:
+            MessageSystem.error("Cannot perform clipboard action: must have an opened code tab.", e.message)
 
     def copy(self, event):
 
         # clipboard copy
-        self.notebook.copy()
+        try:
+            self.notebook.copy()
+        except IndexError, e:
+            MessageSystem.error("Cannot perform clipboard action: must have an opened code tab.", e.message)
 
     def paste(self, event):
 
         # clipboard paste
-        self.notebook.paste()
+        try:
+            self.notebook.paste()
+        except IndexError, e:
+            MessageSystem.error("Cannot perform clipboard action: must have an opened code tab.", e.message)
 
     def redo(self, event):
 
         # Redo last adjustment in text in the notebook
-        self.notebook.redo()
+        try:
+            self.notebook.redo()
+        except IndexError, e:
+            MessageSystem.error("Cannot perform redo action: must have an opened code tab.", e.message)
 
     def find_replace(self, event):
 
@@ -407,8 +422,10 @@ class MainWindow(wx.Frame):
     def show_message(self, text):
 
         # display text in message pane
+        self.message_book.SetSelection(0)
         self.message_pane.show_message(text)
         self.message_book.Update()
+        self.notebook.SetFocus()
 
     def show_errors(self, text):
 

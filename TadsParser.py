@@ -23,23 +23,7 @@ class TClass:
         returns list
         """
 
-        # find where inherited classes in declaration begins by looking for :
-        # check also for dynamic objects
-        start_index = declaration.find(u":")
-        if not start_index:
-            start_index = declaration.rfind(u"+")
-        result = []
-        if start_index:
-            start_index += 1
-            for c in declaration[start_index:]:
-
-                # look for alphanumeric or comma
-                if str(c).isalnum() or c == u',' or c == u' ':
-                    result.append(c)
-                else:
-                    break
-        result = u''.join(result)
-        self.inherits = [r.strip() for r in result.split(u',')]
+        self.inherits = get_inherits(declaration)
 
 
 class TMember:
@@ -91,6 +75,22 @@ def search(filename, final_classes, final_modifys, final_globals):
     final_classes.update(classes)
     final_modifys.extend(modifys)
     final_globals.update(global_objects)
+
+
+def inherit_search(c, classes):
+
+    """
+    Ensure that all parent classes are in for inheritance purposes, recursive
+    """
+
+    # collect inherited classes and match them
+    result = []
+    for i in c.inherits:
+        if i in classes:
+            inherits = inherit_search(classes[i], classes)
+            result.append(i)
+            result.extend(inherits)
+    return list(set(result))
 
 
 def global_search(cleaned, uncleaned, filename, classes, modifys, globals_vars):
@@ -209,6 +209,51 @@ def get_members(class_list, classes, modifys=None):
     return result
 
 
+def get_inherits(declaration):
+
+    """
+    Get class inheritances in a line
+    """
+
+    # find where inherited classes in declaration begins by looking for :
+    # check also for dynamic objects
+    start_index = declaration.find(u":")
+    if not start_index:
+        start_index = declaration.rfind(u"+")
+    result = []
+    if start_index:
+        start_index += 1
+        for c in declaration[start_index:]:
+
+            # look for alphanumeric or comma
+            if str(c).isalnum() or c == u',' or c == u' ':
+                result.append(c)
+            else:
+                break
+    result = u''.join(result)
+    return [r.strip() for r in result.split(u',')]
+
+
+def object_in_line(line):
+
+    """
+    Look for object in line - return class inheritances if it's there, else return nothing
+    requires cleaned code
+    """
+
+    # make sure we're not looking at a class
+    if u':' in line and u'class' not in line:
+        return None
+
+    # okay, we've found a colon, it's prolly an object
+    # else look for ++
+    if u'+' in line or u':' in line:
+        classes = get_inherits(line)
+        if classes:
+            return classes
+    return None
+
+
 def object_search(code, filename):
 
     """
@@ -318,8 +363,8 @@ def __get_documentation(lines, index):
                     result.reverse()
                     return u' '.join(result).strip()
     except:
-        return "No help found on that keyword. "
-    return "No help found on that keyword. "
+        return u"No help found on that keyword. "
+    return u"No help found on that keyword. "
 
 
 def __member_search(lines):
@@ -334,14 +379,15 @@ def __member_search(lines):
         # look for equals sign (for members) or parenths (for methods)
         line = line.strip()
         line = line.replace(u' ', u'')
-        if u'=' in line and u'(' not in line and u')' not in line:
+        if u'=' in line:
+            if u'(' not in line or u'(' in line and line.find(u'=') < line.find(u'('):
 
-            # we've found a member, add it to our results dict
-            new = TMember()
-            new.line = index
-            new.name = line[0:line.find(u'=')]
-            result[new.name] = new
-            continue
+                # we've found a member, add it to our results dict
+                new = TMember()
+                new.line = index
+                new.name = line[0:line.find(u'=')]
+                result[new.name] = new
+                continue
 
         if u'(' in line and u')' in line:
 
