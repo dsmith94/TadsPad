@@ -8,7 +8,7 @@ import MessageSystem
 
 
 class Box(wx.Dialog):
-    def __init__(self, style, size=12):
+    def __init__(self, style, path, size=12):
         wx.Dialog.__init__(self, None, title="Theme Editor")
 
         # theme dialog contents
@@ -21,6 +21,7 @@ class Box(wx.Dialog):
         self.slider.Bind(wx.EVT_SLIDER, self.change_size, id=wx.ID_ANY)
         self.theme = wx.TextCtrl(self)
         self.theme.Value = style
+        self.path = path
         theme_button = wx.Button(self, wx.ID_FILE, "&Load Color XML...")
         theme_button.Bind(wx.EVT_BUTTON, self.load_colors, id=wx.ID_FILE)
         contents.Add(self.text_size, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
@@ -55,7 +56,7 @@ class Box(wx.Dialog):
         # show file open dialog
 
         dialog = wx.FileDialog(self, "Load Eclipse Color Scheme", "", "", "xml files (*.xml)|*.xml", wx.FD_OPEN)
-        dialog.Path = os.path.join('./', 'themes') + "/"
+        dialog.Path = self.path
         if dialog.ShowModal() == wx.ID_CANCEL:
             return
         else:

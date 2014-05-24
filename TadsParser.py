@@ -266,32 +266,32 @@ def object_search(code, filename):
     # comb thru code line by line to find non-anonomous objects
     lines = code.split(u'\n')
     for index, line in enumerate(lines):
-        line = line.strip()
         if u':' in line and u'class' not in line:
+            if line[0].isalnum() or line[0] == u'+':
 
-            # we've found an object, and it's not a class. get name, line number and members
-            name = line[:line.find(u":")]
-            name = name.strip(u"+ ")
-            if name:
-                new = TObject()
-                new.name = name
-                new.filename = filename
-                new.line = index
-                new.get_inherits(line)
+                # we've found an object, and it's not a class. get name, line number and members
+                name = line[:line.find(u":")]
+                name = name.strip(u"+ ")
+                if name:
+                    new = TObject()
+                    new.name = name
+                    new.filename = filename
+                    new.line = index
+                    new.get_inherits(line)
 
-                # find end of this object
-                for end_index, end_line in enumerate(lines[new.line:]):
+                    # find end of this object
+                    for end_index, end_line in enumerate(lines[new.line:]):
 
-                    # semicolon - we've found the end of the object
-                    if u';' in end_line:
-                        new.end = end_index + index
-                        break
+                        # semicolon - we've found the end of the object
+                        if u';' in end_line:
+                            new.end = end_index + index
+                            break
 
-                # now that we have start and end of object, search for members
-                new.members = __member_search(lines[new.line:new.end])
+                    # now that we have start and end of object, search for members
+                    new.members = __member_search(lines[new.line:new.end])
 
-                # add new object
-                result[new.name] = new
+                    # add new object
+                    result[new.name] = new
 
     return result
 

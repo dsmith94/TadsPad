@@ -161,7 +161,7 @@ class MainWindow(wx.Frame):
     def theme_window(self, event):
 
         # edit editor theme with dialog
-        box = ThemeDialog.Box(self.notebook.colors, self.notebook.size)
+        box = ThemeDialog.Box(self.notebook.colors, self.themes_path, self.notebook.size)
         result = box.ShowModal()
         if result == wx.ID_OK:
             self.notebook.colors = box.theme.Value
