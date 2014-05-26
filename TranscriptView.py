@@ -63,17 +63,18 @@ class TranscriptViewWindow(wx.Frame):
 
         # load transcript from previous saved file
         dialog = wx.FileDialog(self, "Load Transcript from File", "", "", "txt files (*.txt)|*.txt", wx.FD_OPEN)
-        dialog.Path = self.project.path + "/"
+        dialog.Path = "\"" + self.project.path + '/' + "\""
         if dialog.ShowModal() == wx.ID_CANCEL:
             return
         else:
             path = dialog.Path
             if os.path.exists(path):
-                self.transcript = process_transcript(path)
                 self.transcript_ctrl.DeleteAllItems()
-                for i, command in enumerate(self.transcript):
-                    self.transcript_ctrl.InsertStringItem(i, command)
-                self.Title = "Transcript of " + os.path.basename(path)
+                self.transcript = process_transcript(path)
+                if self.transcript:
+                    self.Title = "Transcript of " + os.path.basename(path)
+                    for i, command in enumerate(self.transcript):
+                        self.transcript_ctrl.InsertStringItem(i, command)
             else:
                 MessageSystem.error("File not found: " + path, "Cannot Load Transcript")
 
@@ -81,17 +82,20 @@ class TranscriptViewWindow(wx.Frame):
 
         # save transcript file to text
         dialog = wx.FileDialog(self, "Save Transcript", "", "", "txt files (*.txt)|*.txt", wx.FD_SAVE)
-        dialog.Path = self.project.path + "/"
+        dialog.Path = "\"" + self.project.path + '/' + "\""
         if dialog.ShowModal() == wx.ID_CANCEL:
             return
         else:
             path = dialog.Path
+            if path.find(".txt") < 0:
+                path += ".txt"
             script = u'<eventscript>\n<line>' + u'\n<line>'.join(self.transcript)
             try:
                 with codecs.open(path, 'w', "utf-8") as f:
                     f.write(script)
             except IOError:
                 MessageSystem.error("Could not write transcript file: " + path, "Transcript Action Failure")
+
 
 def process_transcript(path):
 
@@ -100,15 +104,23 @@ def process_transcript(path):
     try:
         with codecs.open(path, 'rU', "utf-8") as log_file:
             log_string = log_file.read()
-            log_string = log_string.replace("<line>", "")
-            if log_string:
-                for line in log_string.split('\n'):
-
-                    # read output file line by line and extract commands
-                    if line != "" and line.find(">") < 1:
-                        transcript.append(line)
     except IOError:
         MessageSystem.error("Could not load " + path + ", file corrupted or does not exist." "Transcript Load Failure")
+    else:
+        log_string = log_string.strip()
+        log_string = log_string.replace("<line>", "")
+        if log_string:
+            for line in log_string.split('\n'):
+
+                # read output file line by line and extract commands
+                if line.find(u">") < 1:
+                    transcript.append(line)
+
+                # abort, this isn't a transcript!
+                if u'>' not in line:
+                    MessageSystem.error("Text in " + path + " is not a valid transcript file, no commands loaded.", "No Transcript Detected")
+                    return []
+
     return transcript
 
 

@@ -401,17 +401,31 @@ def __member_search(lines):
     return result
 
 
-def clean(code):
+def clean(code, brackets=True):
 
     """
     Clean code passed as string, return spaces instead of comments and strings, but preserve line numbers
     """
-    clean_sequence = (__scrub_block_comments, __scrub_line_comments, __scrub_all_quotes, __scrub_brackets)
+    clean_sequence = (__scrub_block_comments, __scrub_line_comments, __scrub_all_quotes)
 
     # return code scrubbed at each phase of the cleaning sequence
     for phase in clean_sequence:
         code = phase(code)
+
+    # if brackets are true, clean them too
+    if brackets:
+        code = __scrub_brackets(code)
+
     return code
+
+
+def scrub_not_brackets(code):
+
+    """
+    Same as clean above, but skip cleaning brackets
+
+    """
+
 
 
 def __scrub_block_comments(code):

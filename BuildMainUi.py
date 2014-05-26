@@ -146,11 +146,13 @@ def create_menu_system(top_window):
     help_menu = wx.Menu()
     context_item = help_menu.Append(wx.ID_HELP, 'Context-Sensitive Help\tF1', 'Search Adv3Lite Documentation for Word')
     bookshelf_item = help_menu.Append(wx.ID_HELP_CONTENTS, 'Adv3Lite Bookshelf\tF2', 'Complete TADS Adv3Lite Documentation Set')
+    guide_item = help_menu.Append(wx.ID_HELP_INDEX, 'TadsPad User Guide\tF10', 'Documentation for TadsPad IDE')
     help_menu.AppendSeparator()
     about_item = help_menu.Append(wx.ID_ABOUT, 'About TadsPad...', 'About TadsPad...')
     top_window.Bind(wx.EVT_MENU, top_window.context_help, context_item)
     top_window.Bind(wx.EVT_MENU, MessageSystem.bookshelf_system, bookshelf_item)
     top_window.Bind(wx.EVT_MENU, MessageSystem.about_box, about_item)
+    top_window.Bind(wx.EVT_MENU, MessageSystem.user_guide, guide_item)
 
     # make list of menu items to gray out when project is not loaded
     top_window.grayable.append(add_empty_item)

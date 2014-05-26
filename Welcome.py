@@ -34,7 +34,7 @@ class Box(wx.Dialog):
         open_button.Bind(wx.EVT_BUTTON, self.shutdown, id=wx.ID_OPEN)
         new_button = wx.Button(self, wx.ID_NEW, "&Create New Project")
         new_button.Bind(wx.EVT_BUTTON, self.shutdown, id=wx.ID_NEW)
-        tutorial_button = wx.Button(self, wx.ID_HELP, "&First Time Tutorial")
+        tutorial_button = wx.Button(self, wx.ID_HELP, "&User Guide")
         tutorial_button.Bind(wx.EVT_BUTTON, self.shutdown, id=wx.ID_HELP)
         contents.Add(tips_box, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
         box_for_buttons.Add(new_button, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)

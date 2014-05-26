@@ -289,7 +289,8 @@ class MainWindow(wx.Frame):
         if box == wx.ID_HELP:
 
             # open tadspad tutorial
-            print('no help yet')
+            self.new_project_window()
+            MessageSystem.user_guide(None)
 
     def save_preferences(self):
 

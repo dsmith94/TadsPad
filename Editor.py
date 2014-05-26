@@ -333,18 +333,20 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             if obj in self.notebook.objects:
                 return [m.name for m in self.notebook.objects[obj].members]
 
-    def find_object_template(self):
+    def find_object_template(self, code):
 
         # determine if caret is presently editing an object template
         # first clip out a few lines nearest the ; and the cursor
-        code = TadsParser.clean(self.Text)
         end = code.rfind('\n', 0, self.GetCurrentPos())
         start = code.rfind('\n;\n', 0, end)
         if start < 0:
             start = 1
         if end >= len(code):
             end = len(code) - 1
-        line = (l.strip('+ ') for l in reversed(code[start:end].split('\n')) if l if l[0] != ' ').next()
+        try:
+            line = (l.strip(u'+ ') for l in reversed(code[start:end].split('\n')) if l if l[0] != u' ').next()
+        except StopIteration:
+            line = u""
 
         # we might have a template, search for it
         inherits = TadsParser.get_inherits(line)
@@ -387,7 +389,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         context = search(code, full_line[:caret])
 
         # update object template
-        self.find_object_template()
+        self.find_object_template(code)
 
         # analyze code based on present template and line in context
         for enclosure, suggestions, flags in analyzer:
@@ -465,7 +467,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                             return m.help
 
         # search by current object template
-        self.find_object_template()
+        self.find_object_template(clean_string(self.Text[0:self.GetAnchor() - 1]))
         if self.template:
             for m in self.template.members:
                 if search_string == prep_member(m.name):
@@ -734,6 +736,52 @@ def search(code, line):
 
 
 def clean_string(code):
+
+    """
+    return a string of code with strings, quotes and bracketed code removed
+    """
+
+    code = TadsParser.clean(code, False)
+
+    # remove bracketed enclosures
+    #code = pattern_enclosure.sub("{", code)
+    code = consolidate_brackets(code)
+    code = remove_bracketed_enclosures(code)
+
+    return code
+
+
+def consolidate_brackets(code):
+
+    """
+    consolidate brackets to same line as function or member for processing
+    return code as string
+    """
+
+    in_bracket = False
+    result = []
+    for index, c in reversed(list(enumerate(code))):
+        if c == u"{":
+
+            # we're in a bracket, now remove all spaces and tabs
+            in_bracket = True
+
+        # add to final returned result if not in bracket or if not whitespace
+        if not in_bracket:
+            result.append(c)
+        else:
+            if c != u"\t" and c != u" " and c != u"\n":
+                result.append(c)
+
+        if c == u"\n":
+
+            # no longer in bracket search
+            in_bracket = False
+
+    return u"".join(reversed(result))
+
+
+def clean_string_old(code):
 
     # return a string of code with strings, quotes, and bracketed code removed
     # note that this is a specialty cleaning function, and CANNOT be replace by TadsParser.clean, which is

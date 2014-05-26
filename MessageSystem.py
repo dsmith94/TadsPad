@@ -7,8 +7,8 @@ import os
 import webbrowser
 import ProjectFileSystem
 
-Version_Number = "0.1"
-About_Text = "TadsPad\nby dj\nVersion "
+Version_Number = u"0.5"
+About_Text = u"TadsPad\nby dj\nVersion "
 
 newBrowserTab = 2
 
@@ -30,6 +30,12 @@ def bookshelf_system(parent):
     url = os.path.join(path, 'extensions', 'adv3Lite', 'docs', 'index.htm')
     webbrowser.open(url, new=newBrowserTab)
 
+
+def user_guide(parent):
+
+    # use web browser to display TadsPad user's guide
+    url = "http://www.github.com/dsmith94/guide.html"
+    webbrowser.open(url, new=newBrowserTab)
 
 def about_box(parent):
 
