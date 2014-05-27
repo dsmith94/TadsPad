@@ -34,7 +34,7 @@ def bookshelf_system(parent):
 def user_guide(parent):
 
     # use web browser to display TadsPad user's guide
-    url = "http://www.github.com/dsmith94/guide.html"
+    url = "http://dsmith94.github.io/TadsPad/"
     webbrowser.open(url, new=newBrowserTab)
 
 def about_box(parent):
