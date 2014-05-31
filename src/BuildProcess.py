@@ -40,6 +40,35 @@ def win32run(the_thread, the_project, compiler, interpreter, script="", flags=""
         wx.CallAfter(MessageSystem.show_errors, output)
 
 
+def macrun(the_thread, the_project, compiler, interpreter, script="", flags="", terminal="Terminal.app"):
+
+    # run if on mac os x
+    # compile game for playing
+    project_to_compile = flags + " -f \"" + the_project.path + "/" + the_project.filename + "\""
+    compile_process = subprocess.Popen(compiler + project_to_compile, shell=True, stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT)
+    output = compile_process.communicate()[0]
+    exit_code = compile_process.returncode
+
+    # prepare to play game - get transcript ready
+    input_path = os.path.join(the_project.path, 'input.txt')
+    with open(input_path, mode='w') as input_file:
+        input_file.write('\n'.join(['>record on', '>transcript.txt\n']))
+        if script != "":
+            input_file.write(script)
+
+    # play if compile was a success
+    # make a temp input script for mac terminal
+    if exit_code == 0:
+        wx.CallAfter(MessageSystem.show_message, "Compile complete")
+        path = os.path.join(the_project.path, the_project.name + ".t3")
+        with open(os.path.join(the_project.path, "compile.sh"), mode='w') as compile_script:
+            compile_script.write('#!/bin/sh\n' + interpreter + ' ' + '-R' + ' ' + + input_path + ' ' + + path)
+        playgame = subprocess.Popen(['open', '-a', terminal, os.path.join(the_project.path, "compile.sh")], shell=False)
+    else:
+        wx.CallAfter(MessageSystem.show_errors, output)
+
+
 def nixrun(the_thread, the_project, compiler, interpreter, script="", flags="", terminal="x-terminal-emulator"):
 
     # run if on unix style system
@@ -79,10 +108,14 @@ def run(the_thread, the_project, terp, tads3path, script="", flags="", terminal=
         interpreter = "\"" + terp + "\""
     else:
         interpreter = terp
-    if sys.platform == "win32":
+    platform = sys.platform.lower()
+    if platform == "win32":
         win32run(the_thread, the_project, compiler, interpreter, script, flags)
-    else:
-        nixrun(the_thread, the_project, compiler, interpreter, terminal=terminal, script=script, flags=flags)
+        return
+    if platform == "darwin":
+        macrun(the_thread, the_project, compiler, interpreter, terminal=terminal, script=script, flags=flags)
+        return
+    nixrun(the_thread, the_project, compiler, interpreter, terminal=terminal, script=script, flags=flags)
 
 
 __author__ = 'dj'

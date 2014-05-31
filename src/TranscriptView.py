@@ -48,13 +48,14 @@ class TranscriptViewWindow(wx.Frame):
         # command has been activated, fire up 'terp with commands listed
         index_max = event.GetIndex()
         index = 0
-        script = ""
+        script = u""
         for command in self.transcript:
-            script = script + ">" + command.strip('>') + "\n"
+            script = script + u">" + command.strip(u'>').strip() + u"\n"
             if index == index_max:
                 break
             index += 1
         process = BuildProcess.CompileGame
+        print script
         BuildProcess.run(process, self.project, self.terp, self.tads3path, script=script, flags=' -v -d ',
                          terminal=self.terminal)
         self.Close()
@@ -108,9 +109,9 @@ def process_transcript(path):
         MessageSystem.error("Could not load " + path + ", file corrupted or does not exist." "Transcript Load Failure")
     else:
         log_string = log_string.strip()
-        log_string = log_string.replace("<line>", "")
+        log_string = log_string.replace(u"<line>", u">")
         if log_string:
-            for line in log_string.split('\n'):
+            for line in log_string.split(u'\n'):
 
                 # read output file line by line and extract commands
                 if line.find(u">") < 1:
