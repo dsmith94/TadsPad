@@ -71,7 +71,7 @@ class SpellCheckWindow(wx.Dialog):
 
         # replace old text with new text
         self.editor.Text = self.editor.Text.replace(old_text, new_text)
-        self.check_next_word(self.errors)
+        self.check_next_word()
 
     def suggestion_activated(self, event):
 
