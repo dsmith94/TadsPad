@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ## editor subclassed from styledtextctrl
 
 import wx
@@ -327,11 +326,19 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # find object on a single line
         # return methods
-        tokens = re.split('[{0}]'.format(re.escape(" [](){};")), line)
-        obj = tokens[-1].split(".")[0]
+        tokens = re.split('[{0}]'.format(re.escape(u" [](){};")), line)
+        obj = tokens[-1].split(u".")[0]
         if obj:
             if obj in self.notebook.objects:
-                return [m.name for m in self.notebook.objects[obj].members]
+                members = []
+                # remove following line if usefulness is not demonstrated soon
+                #members.extend([m.name for m in TadsParser.get_members(self.notebook.objects[obj].inherits, self.notebook.classes, self.notebook.modifys)])
+                members.extend([m.name for m in self.notebook.objects[obj].members])
+                members.extend([m.name for i in self.notebook.objects[obj].inherits for m in TadsParser.get_members(self.notebook.classes[i].inherits, self.notebook.classes, self.notebook.modifys)])
+                return members
+            else:
+                return 'no object'
+        return None
 
     def find_object_template(self, code):
 
@@ -366,7 +373,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # stage 2: take the processed code and find
         # the classes of the object we're editing, plus the present enclosures
+        # and only continue if some suggestions are present
         suggestions = self.build_suggestions(code)
+        if not suggestions:
+            self.AutoCompCancel()
+            return
 
         # stage 3: finally, gather context data from entered word
         # make string to send to the stc autocompletion box
@@ -383,7 +394,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
     def build_suggestions(self, code):
 
-        # build suggestions from the code passed above
+        """
+        build suggestions from the code passed above
+        """
+
+        # this is unfortunately quite complex, because of the nature of code completion
         results = []
         full_line, caret = self.GetCurLine()
         context = search(code, full_line[:caret])
@@ -401,6 +416,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 if 'members' in flags:
                     members = self.find_object_methods(full_line[:caret])
                     if members:
+                        if members == 'no object':
+                            # no object on other end of period - return blank
+                            return
                         results = members
                 if 'objects' in flags:
                     results.extend(self.notebook.objects)
@@ -435,8 +453,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             return ""
         for char_index in xrange(anchor_position, 1, -1):
             char = self.Text[char_index]
-            if word_boundary(char):
-                return self.Text[char_index + 1:anchor_position + 1].strip(".").strip("@").strip()
+            if word_boundary(char) or char == u'(':
+                return self.Text[char_index + 1:anchor_position + 1].strip(u".").strip(u"@").strip()
         return ""
 
     def context_help(self):
@@ -722,12 +740,15 @@ def search(code, line):
     if len(line) > 2:
         if line[0] == '+' or line[1] == '+':
             return ':'
-    if '@' in line:
+    if u'@' in line:
         return '@'
-    if ':' in line:
+    if u':' in line:
         return ':'
-    if '.' in line:
-        return '.'
+    if u'.' in line:
+        tokens = re.split('[{0}]'.format(re.escape(u" [](){};")), line)
+        if tokens:
+            if u"." in tokens[-1]:
+                return '.'
     remaps = [t for t in [direct_token, indirect_token] if t in line]
     if remaps:
         return [remap_direct_token]
@@ -744,7 +765,6 @@ def clean_string(code):
     code = TadsParser.clean(code, False)
 
     # remove bracketed enclosures
-    #code = pattern_enclosure.sub("{", code)
     code = consolidate_brackets(code)
     code = remove_bracketed_enclosures(code)
 

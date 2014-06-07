@@ -72,6 +72,7 @@ class ObjectBrowser(wx.ListCtrl):
                 if file_contents:
                     self.notebook.modifys.extend(TadsParser.modify_search(file_contents, file_name))
                     self.notebook.objects.update(TadsParser.object_search(TadsParser.clean(file_contents), file_name))
+                    self.notebook.classes.update(TadsParser.class_search(TadsParser.clean(file_contents), file_contents, file_name))
 
         # now update the notebook objects list box
         for o in self.notebook.objects.values():

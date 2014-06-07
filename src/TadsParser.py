@@ -204,7 +204,7 @@ def get_members(class_list, classes, modifys=None):
             if modifys:
                 for m in modifys:
                     if m.name == c:
-                        result.extend(m.members)
+                        result.extend(m.members.values())
 
     return result
 
@@ -394,7 +394,16 @@ def __member_search(lines):
             # we've found a method, add it to our results dict
             new = TMember()
             new.line = index
-            new.name = line[0:line.find(u')') + 1]
+            #new.name = line[0:line.find(u')') + 1]
+            name = []
+            for i in line[0:line.find(u')') + 1]:
+                if i.isalnum() or i == u',' or i == u'(' or i == u')':
+                    capturing = True
+                else:
+                    capturing = False
+                if capturing:
+                    name.append(i)
+            new.name = u''.join(name)
             result[new.name] = new
 
     # we're finished, return dictionary

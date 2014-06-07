@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 # TadsPad executable script
 import src
