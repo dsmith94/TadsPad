@@ -737,11 +737,11 @@ def search(code, line):
     # scan current code for possible enclosures we're in
     # look first in current line, then in all code
     # the order here is important, by the way
+    if u'@' in line:
+        return '@'
     if len(line) > 2:
         if line[0] == '+' or line[1] == '+':
             return ':'
-    if u'@' in line:
-        return '@'
     if u':' in line:
         return ':'
     if u'.' in line:
