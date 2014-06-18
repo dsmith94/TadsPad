@@ -428,13 +428,92 @@ def clean(code, brackets=True):
     return code
 
 
-def scrub_not_brackets(code):
+def replace_next(text, lst, old, new):
 
     """
-    Same as clean above, but skip cleaning brackets
-
+    accepts a string, then replaces next in a list matching old substring with new
+    also will potentially look for regular expression match, false by default
+    used in find...replace stuff
     """
 
+    # recursively replace all in string by replacing next position in a string
+    try:
+        next_index = lst.pop(0)
+    except IndexError:
+        return text
+    else:
+        new_length_difference = len(new) - len(old)
+        sub_text1 = text[:next_index]
+        sub_text2 = text[next_index + len(old):]
+        for i in xrange(0, len(lst)):
+            lst[i] += new_length_difference
+        return replace_next(sub_text1 + new + sub_text2, lst, old, new)
+
+
+def extract_strings(code):
+
+    """
+    Clean code of comments and regular code and escape quotes, preserving strings
+    """
+
+    comments = __scrub_block_comments, __scrub_line_comments
+    escapes = u"\\\"", u"\\\'"
+
+    # start by removing comments
+    for remove in comments:
+        code = remove(code)
+
+    # remove escape quotes
+    for remove in escapes:
+        code = code.replace(remove, u"  ")
+
+    # now remove all but strings
+    result = []
+    in_double = False
+    in_single = False
+    pointy_brackets_level = 0
+
+    # comb thru string character by character
+    for ch in code:
+
+        # always add line endings
+        if ch == u"\n":
+            result.append(ch)
+            continue
+
+        # look for quotes and skip anything in pointy brackets
+        if ch == u"\"" and not in_single:
+            if in_double:
+                in_double = False
+            else:
+                in_double = True
+                result.append(u" ")
+                continue
+        if ch == u"\'" and not in_double:
+            if in_single:
+                in_single = False
+            else:
+                in_single = True
+                result.append(u" ")
+                continue
+        if in_double or in_single:
+            if ch == u"<":
+                pointy_brackets_level += 1
+            if ch == u">":
+                if pointy_brackets_level > 0:
+                    pointy_brackets_level -= 1
+        else:
+            pointy_brackets_level = 0
+
+        # only add character to result if we're not inside pointy brackets
+        if pointy_brackets_level == 0:
+            if in_double or in_single:
+                result.append(ch)
+                continue
+        result.append(u" ")
+
+    # now finished, return result
+    return u"".join(result)
 
 
 def __scrub_block_comments(code):

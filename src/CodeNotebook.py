@@ -253,44 +253,71 @@ class Notebook(Aui.AuiNotebook):
         # try loading it from memory if we can't find it already open
         self.load_page(self.GetTopLevelParent().project.path, name, line_number)
 
-    def find_string(self, text, status):
+    def find_string(self, text, status, in_strings=False, case_sensitive=True):
 
         # find string in selected page
         try:
             index = self.GetSelection()
             page = self.GetPage(index)
-        except:
+        except IndexError:
             MessageSystem.error("No files opened, cannot search. ", "Search String Failure")
         else:
-            n = page.editor.Text.count(text)
+            if in_strings:
+                if case_sensitive:
+                    n = TadsParser.extract_strings(page.editor.Text).count(text)
+                else:
+                    n = TadsParser.extract_strings(page.editor.Text.lower()).count(text.lower())
+            else:
+                if case_sensitive:
+                    n = page.editor.Text.count(text)
+                else:
+                    n = page.editor.Text.lower().count(text.lower())
             status.SetStatusText("Found " + str(n) + " occurrences")
-            page.editor.search_for(text)
+            page.editor.search_for(text, in_strings)
 
-    def replace_string(self, old, new, status):
+    def replace_string(self, old, new, status, in_strings=False, case_sensitive=True):
 
         # replace string in selected page
         try:
             index = self.GetSelection()
             page = self.GetPage(index)
-        except:
+        except IndexError:
             MessageSystem.error("No files opened, cannot replace. ", "Replace String Failure")
         else:
-            n = page.editor.Text.count(old)
+            if in_strings:
+                if case_sensitive:
+                    n = TadsParser.extract_strings(page.editor.Text).count(old)
+                else:
+                    n = TadsParser.extract_strings(page.editor.Text.lower()).count(old.lower())
+            else:
+                if case_sensitive:
+                    n = page.editor.Text.count(old)
+                else:
+                    n = page.editor.Text.lower().count(old.lower())
             status.SetStatusText("Replaced 1 of " + str(n) + " occurrences")
-            page.editor.replace_with(old, new)
+            page.editor.replace_with(old, new, in_strings, case_sensitive)
 
-    def replace_all_string(self, old, new, status):
+    def replace_all_string(self, old, new, status, in_strings=False, case_sensitive=True):
 
         # replace all strings in selected page
         try:
             index = self.GetSelection()
             page = self.GetPage(index)
-        except:
+        except IndexError:
             MessageSystem.error("No files opened, cannot replace. ", "Replace String Failure")
         else:
-            n = page.editor.Text.count(old)
+            if in_strings:
+                if case_sensitive:
+                    n = TadsParser.extract_strings(page.editor.Text).count(old)
+                else:
+                    n = TadsParser.extract_strings(page.editor.Text.lower()).count(old.lower())
+            else:
+                if case_sensitive:
+                    n = page.editor.Text.count(old)
+                else:
+                    n = page.editor.Text.lower().count(old.lower())
             status.SetStatusText("Replaced all " + str(n) + " occurrences")
-            page.editor.replace_all_with(old, new)
+            page.editor.replace_all_with(old, new, in_strings, case_sensitive)
 
     def highlight_error(self, name, line_number, error_string):
 

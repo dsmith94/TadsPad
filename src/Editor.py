@@ -547,25 +547,39 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         return_text = return_text.replace("[&escape &goes &here]", "\'")
         return return_text
 
-    def search_for(self, text):
+    def search_for(self, text, in_strings=False, case_sensitive=True):
 
         # select text from anchor
-        maxPos = len(self.Text)
+        if in_strings:
+            search_in_text = TadsParser.extract_strings(self.Text)
+        else:
+            search_in_text = self.Text
+        if not case_sensitive:
+            text = text.lower()
+            search_in_text = search_in_text.lower()
+        maxPos = len(search_in_text)
         textLength = len(text)
-        minPos = self.GetAnchor()
-        location = self.FindText(minPos, maxPos, text)
+        minPos = self.GetAnchor() + 1
+        location = search_in_text.find(text, minPos, maxPos)
         if location != -1:
             self.GotoPos(location)
             self.SetAnchor(location)
             self.SetCurrentPos(location + textLength)
 
-    def replace_with(self, old, new):
+    def replace_with(self, old, new, in_strings=False, case_sensitive=True):
 
         # replace one string within selection
-        maxPos = len(self.Text)
+        if in_strings:
+            search_in_text = TadsParser.extract_strings(self.Text)
+        else:
+            search_in_text = self.Text
+        maxPos = len(search_in_text)
         textLength = len(new)
         minPos = self.GetAnchor()
-        location = self.FindText(minPos, maxPos, old)
+        if not case_sensitive:
+            old = old.lower()
+            search_in_text = search_in_text.lower()
+        location = search_in_text.find(old, minPos, maxPos)
         if location != -1:
             text = self.Text[location:]
             self.BeginUndoAction()
@@ -576,25 +590,27 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.SetAnchor(location)
             self.SetCurrentPos(location + textLength)
 
-    def replace_all_with(self, old, new):
+    def replace_all_with(self, old, new, in_strings, case_sensitive=True):
 
-        # select text from anchor
-        maxPos = len(self.Text)
-        textLength = len(new)
-        minPos = self.GetAnchor()
-        location = self.FindText(minPos, maxPos, old)
-        if location != -1:
+        # replace all instances in editor of old with new string
+        if in_strings:
+            search_in_text = TadsParser.extract_strings(self.Text)
+        else:
+            search_in_text = self.Text
+        if not case_sensitive:
+            old = old.lower()
+            search_in_text = search_in_text.lower()
+        lst = [i for i, char in enumerate(search_in_text) if search_in_text[i:len(old) + i] == old]
+        replaced = TadsParser.replace_next(self.Text, lst, old, new)
+        if replaced:
             self.BeginUndoAction()
-            self.Text = self.Text.replace(old, new)
+            self.Text = replaced
             self.EndUndoAction()
-            self.GotoPos(location)
-            self.SetAnchor(location)
-            self.SetCurrentPos(location + textLength)
 
     def spellcheck(self, project):
 
         # pull strings from page and send to atd spellcheck service
-        strings = self.extract_strings()
+        strings = TadsParser.extract_strings(self.Text)
         errors = atd.checkDocument(strings, "TadsPad_" + self.GetTopLevelParent().project.name)
 
         # pull in ignored words from ignored.txt
