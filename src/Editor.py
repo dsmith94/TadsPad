@@ -333,7 +333,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 members = []
                 # remove following line if usefulness is not demonstrated soon
                 #members.extend([m.name for m in TadsParser.get_members(self.notebook.objects[obj].inherits, self.notebook.classes, self.notebook.modifys)])
-                members.extend([m.name for m in self.notebook.objects[obj].members])
+                members.extend([m.name for m in self.notebook.objects[obj].keywords])
                 members.extend([m.name for i in self.notebook.objects[obj].inherits for m in TadsParser.get_members(self.notebook.classes[i].inherits, self.notebook.classes, self.notebook.modifys)])
                 return members
             else:
@@ -425,7 +425,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                     results.extend(self.notebook.global_tokens)
                 if 'self' in flags:
                     if self.template:
-                        results.extend(m.name for m in self.template.members)
+                        results.extend(m.name for m in self.template.keywords)
                 if 'filter' in flags:
                     results = [r for f in flags['filter'] for r in results if f in r]
                 if 'prefix' in flags:
@@ -435,6 +435,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if not results:
             if self.template:
                 results.extend([m.name for m in self.template.members if hasattr(m, 'name')])
+                results.extend(self.template.keywords)
                 results.extend(self.notebook.objects)
             else:
                 results = outside_template

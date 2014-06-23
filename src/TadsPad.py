@@ -21,6 +21,7 @@ import sys
 import shutil
 import LibraryConfigWindow
 import embedded
+import ImplementationReport
 
 
 def is_64_windows():
@@ -459,6 +460,27 @@ class MainWindow(wx.Frame):
         else:
             self.mgr.GetPane('project').Show()
         self.mgr.Update()
+
+    def minimal_thing_report(self, event):
+
+        # call thing report box, minimal
+        self.object_browser.rebuild_object_catalog()
+        box = ImplementationReport.Box('Thing', self.project, self.notebook, extent="Minimal")
+        box.Show()
+
+    def extensive_thing_report(self, event):
+
+        # call thing report box, extensive
+        self.object_browser.rebuild_object_catalog()
+        box = ImplementationReport.Box('Thing', self.project, self.notebook, extent="Extensive")
+        box.Show()
+
+    def actor_report(self, event):
+
+        # call actor report box
+        self.object_browser.rebuild_object_catalog()
+        box = ImplementationReport.Box('Actor', self.project, self.notebook, extent="Extensive")
+        box.Show()
 
     def find_themes(self):
 

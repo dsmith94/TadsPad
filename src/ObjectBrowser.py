@@ -78,7 +78,7 @@ class ObjectBrowser(wx.ListCtrl):
         for o in self.notebook.objects.values():
 
             # update members in objects
-            o.members = TadsParser.get_members(o.inherits, self.notebook.classes, self.notebook.modifys)
+            o.keywords = TadsParser.get_members(o.inherits, self.notebook.classes, self.notebook.modifys)
 
         # and finally add to display box
         for index, o in enumerate(sorted(self.notebook.objects.iterkeys(), key=lambda s: s.lower())):

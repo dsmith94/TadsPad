@@ -14,6 +14,7 @@ class TClass:
         self.filename = ""
         self.help = ""
         self.members = {}
+        self.keywords = []
         self.inherits = []
 
     def get_inherits(self, declaration):
@@ -51,6 +52,92 @@ class TObject(TClass):
 
     def __init__(self):
         TClass.__init__(self)
+        self.implemented = []
+
+    def __check_actor(self, path):
+
+        # by convention, all topic reponses are stored in same file as actor or actor state
+        # look for all topics stored in a given object
+        result = []
+
+        # open file for actor object
+        from codecs import open as open_unicode
+        try:
+            with open_unicode(path + "/" + self.filename, 'rU', "utf-8") as f:
+                file_contents = f.read()
+
+        except IOError, e:
+            MessageSystem.error("Could not load file: " + e.filename, "File read error")
+            return []
+
+        # now perform search
+        file_contents = clean(file_contents)
+        file_contents = file_contents.split(u"\n")
+        level = file_contents[self.line].count(u'+')
+        code = file_contents[self.line + 1:]
+        for line in code:
+            if line:
+                if line[0] != u' ' and u';' not in line:
+
+                    # looks like we've got an object def of some kind
+                    if u'+' in line:
+                        if line.count(u'+') > level:
+
+                            # and it is nested into the actor or actor state
+                            # is it a topic of some kind?
+                            if u'Topic' in line:
+
+                                # it is, add to results
+                                if u'@' in line:
+                                    result.append(line[line.find(u'@') + 1:].strip())
+
+                                elif u'[' in line:
+                                    if u',' in line:
+                                        buffer = line[line.find(u'[') + 1:line.find(u']')]
+                                        buffer = buffer.split(u',')
+                                        result.extend([o.strip() for o in buffer])
+                                    else:
+                                        result.append(line[line.find(u'[') + 1:line.find(u']')].strip())
+                        else:
+
+                            # we're no longer nesting objects into a state or actor, so quit search
+                            return result
+
+        return result
+
+    def check(self, level, keywords=None, path=None):
+
+        # check level of implementation for a given object
+        # look for actor or actor state in inherits, but dont bother unless we have keywords to search against
+        if keywords:
+
+            # we're searching an actor state or actor, search level of implementation
+            implemented = self.__check_actor(path)
+            return [k for k in keywords if k not in implemented]
+
+        else:
+
+            return self.__check_thing(level)
+
+    def __check_thing(self, level):
+
+        # return implementation level of a thing object
+        properties = [u'smellDesc', u'listenDesc', u'feelDesc', u'tasteDesc', u'bulk']
+        if level == 'Standard':
+            properties.extend([u'readDesc', u'objInPrep', u'listOrder', u'visibleInDark', u'bulkCapacity',
+                               u'maxSingleBulk'])
+        if level == 'Extensive':
+            properties.extend([u'readDesc', u'objInPrep', u'listOrder', u'fluidName', u'visibleInDark',
+                               u'isTransparent', u'isOpenable', u'isSwitchable', u'isWearable', u'isBoardable',
+                               u'isEnterable', u'isLightable', u'isEdible', u'isDecoration', u'lockability',
+                               u'isOpen', u'isLocked', u'isOn', u'isLit', u'wornBy', u'maxSingleBulk', u'bulkCapacity'])
+
+        # now check this object for missing properties and return a list of properties
+        result = []
+        for p in properties:
+            if p not in self.implemented:
+                result.append(p)
+        return result
 
 
 def search(filename, final_classes, final_modifys, final_globals):
@@ -289,6 +376,9 @@ def object_search(code, filename):
 
                     # now that we have start and end of object, search for members
                     new.members = __member_search(lines[new.line:new.end])
+
+                    # save the implemented members
+                    new.implemented = new.members.keys()
 
                     # add new object
                     result[new.name] = new
