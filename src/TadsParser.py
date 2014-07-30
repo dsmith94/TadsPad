@@ -238,13 +238,13 @@ def modify_search(code, filename):
     result = []
 
     # separate code as a set of lines and remove indents
-    lines = code.split(u'\n')
+    lines = clean(code).split(u'\n')
     for index, line in enumerate(lines):
         line = line.strip()
         if line[:7] == 'modify ':
 
             # we've found a modify here, change the code in the class
-            name = line[7:].strip()
+            name = line[7:].strip('{').strip()
 
             # new modify here, add to modify list
             new = TModify()
@@ -272,6 +272,13 @@ def get_members(class_list, classes, modifys=None):
 
     """
     return members affiliated with a list of unicode class keys, with data from classes dict passed
+    if modifys:
+        print classes['Thing'].members.keys()
+        print
+        for m in modifys:
+            if m.name == 'Thing':
+                print m.members
+
     """
 
     result = []
@@ -287,11 +294,12 @@ def get_members(class_list, classes, modifys=None):
                 if i in classes:
                     result.extend(classes[i].members.values())
 
-            # and the modifys members as well
+            # modifys members as well
             if modifys:
                 for m in modifys:
-                    if m.name == c:
+                    if m.name == c or m.name in classes[c].inherits:
                         result.extend(m.members.values())
+
 
     return result
 

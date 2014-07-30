@@ -24,9 +24,6 @@ inObj_suggestions = u"preCond", verify_token + u"()", check_token + u"()", actio
 verify_suggestions = (u"logicalRank(rank, key);", u"dangerous", u"illogicalNow(msg, params);", u"illogical(msg, params);",
                       u"illogicalSelf(msg, params);", u"nonObvious", u"inaccessible(msg, params);")
 
-function_suggestions = (u"finishGameMsg(msg, extra)", u"finishGame()")
-endgame_suggestions = (u"ftDeath", u"ftVictory")
-
 
 # colors to tags list
 text_styles = (("STC_STYLE_LINENUMBER", 'lineNumber'),
@@ -79,12 +76,18 @@ analyzer = (verify_token, verify_suggestions, ('objects', 'self')), \
            (remap_direct_token, None, {'self': None, 'filter': [direct_token, indirect_token], 'prefix': 'as'})
 
 # defaults when editing outside a template
-outside_template = u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class"
+outside_template = u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class", u"modify"
 
 # reserved keywords for tads language
 reserved_words = ("break", "case", "catch", "class", "case", "continue", "do", "default", "delete", "else", "enum",
                   "finally", "for", "foreach", "function", "goto", "if", "intrinsic", "local", "modify", "new", "nil",
                   "property", "replace", "return", "self", "switch", "throw", "token", "true", "try", "while", "end")
+
+# suggestables - always suggest these in an enclosure
+enclosure_suggestions = ("break", "case", "catch", "case", "continue", "do", "default", "delete", "else", "enum",
+                        "finally", "for", "foreach", "function", "goto", "if", "intrinsic", "local", "new", "nil",
+                        "property", "replace", "return", "self", "switch", "throw", "token", "true", "try", "while",
+                        "end")
 
 
 class ColorSchemer:
@@ -207,6 +210,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
     def on_char_added(self, event):
 
+        # get context
+        full_line, caret = self.GetCurLine()
+
         # don't add if we're in string or comment
         anchor_at_style = self.GetStyleAt(self.GetAnchor())
         if check_for_plain_style(anchor_at_style) is False:
@@ -232,11 +238,14 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # when bracket is added, autoadd matching close bracket
         if event.GetKey() == 123:
+            addNewLine = u""
+            if full_line.strip() != u"{":
+                addNewLine = u"\n"
             self.AutoCompCancel()
             indent = self.GetLineIndentation(self.GetCurrentLine())
             self.SetAnchor(self.GetAnchor() - 1)
             self.SetCurrentPos(self.GetCurrentPos())
-            self.ReplaceSelection(u"\n{\n\n}")
+            self.ReplaceSelection(addNewLine + u"{\n\n}")
             line = self.GetCurrentLine()
             self.SetLineIndentation(line - 2, indent)
             self.SetLineIndentation(line - 1, indent + (self.GetIndent()))
@@ -265,6 +274,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.SetCurrentPos(self.GetCurrentPos() - 2)
 
     def auto_code_selected(self, event):
+
+        # only complete if we're all thats on a line
+        full_line, caret = self.GetCurLine()
+        if caret < len(full_line) - 1:
+            return
 
         # we've selected an auto completion expression! under certain conditions,
         # we may choose to code templates
@@ -335,6 +349,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 #members.extend([m.name for m in TadsParser.get_members(self.notebook.objects[obj].inherits, self.notebook.classes, self.notebook.modifys)])
                 members.extend([m.name for m in self.notebook.objects[obj].keywords])
                 members.extend([m.name for i in self.notebook.objects[obj].inherits for m in TadsParser.get_members(self.notebook.classes[i].inherits, self.notebook.classes, self.notebook.modifys)])
+                print [mem for m in self.notebook.modifys for mem in m.members]
                 return members
             else:
                 return 'no object'
@@ -361,6 +376,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.template = TadsParser.TClass()
             self.template.inherits = inherits
             self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
+
 
     def auto_complete(self):
 
@@ -439,6 +455,12 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                 results.extend(self.notebook.objects)
             else:
                 results = outside_template
+
+        # add reserved tads words if we are in a bracketed enclosure
+        # remove the objFor suggestions
+        if u"{" in code:
+            results.extend(enclosure_suggestions)
+            results = [entry for entry in results if u"objFor" not in entry]
 
         # finalize for return
         results = list(set(results))
@@ -612,6 +634,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # pull strings from page and send to atd spellcheck service
         strings = TadsParser.extract_strings(self.Text)
+
+        # remove escapes from contractions
+        strings = strings.replace(u"\\'", u"\'")
+
+        # send to atd
         errors = atd.checkDocument(strings, "TadsPad_" + self.GetTopLevelParent().project.name)
 
         # pull in ignored words from ignored.txt
@@ -621,6 +648,16 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         for error in errors[:]:
             if error.string in ignored_words:
                 errors.remove(error)
+
+        # only allow spelling errors
+        errors = [e for e in errors if e.description == "Spelling"]
+
+        # and remove duplicates
+        clean_list = []
+        for e in errors:
+            if e.string not in [l.string for l in clean_list]:
+                clean_list.append(e)
+        errors = clean_list
 
         # we now have a list of spelling errors, display to user
         if errors:

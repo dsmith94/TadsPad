@@ -107,6 +107,7 @@ def create_menu_system(top_window):
     copy_item = edit_menu.Append(wx.ID_COPY, 'Copy\tCtrl+C', 'Copy')
     paste_item = edit_menu.Append(wx.ID_PASTE, 'Paste\tCtrl+V', 'Paste')
     find_item = edit_menu.Append(wx.ID_FIND, 'Find and Replace\tCtrl+F', 'Find and Replace Text Strings')
+    find_next_item = edit_menu.Append(wx.ID_PREVIEW_NEXT, 'Find Next\tF3', 'Find Next Instance of Text String')
     edit_menu.AppendSeparator()
     theme_item = edit_menu.Append(wx.ID_ANY, 'Text Settings', 'Change Text Size and Color')
     preferences_item = edit_menu.Append(wx.ID_PREFERENCES, 'Executable Path', 'Locate TADS Compiler and Interpreter')
@@ -116,13 +117,14 @@ def create_menu_system(top_window):
     top_window.Bind(wx.EVT_MENU, top_window.copy, copy_item)
     top_window.Bind(wx.EVT_MENU, top_window.paste, paste_item)
     top_window.Bind(wx.EVT_MENU, top_window.find_replace, find_item)
+    top_window.Bind(wx.EVT_MENU, top_window.find_next, find_next_item)
     top_window.Bind(wx.EVT_MENU, top_window.preferences_window, preferences_item)
     top_window.Bind(wx.EVT_MENU, top_window.theme_window, theme_item)
 
     # view menu
     view_menu = wx.Menu()
-    debug_pane_item = view_menu.Append(wx.ID_ANY, 'Toggle Message Pane\tF3', 'Hide/Show Messages')
-    object_pane_item = view_menu.Append(wx.ID_ANY, 'Toggle Object Pane\tF4', 'Hide/Show Object Pane')
+    debug_pane_item = view_menu.Append(wx.ID_ANY, 'Toggle Message Pane\tF11', 'Hide/Show Messages')
+    object_pane_item = view_menu.Append(wx.ID_ANY, 'Toggle Object Pane\tF12', 'Hide/Show Object Pane')
     top_window.Bind(wx.EVT_MENU, top_window.toggle_messages, debug_pane_item)
     top_window.Bind(wx.EVT_MENU, top_window.toggle_objects, object_pane_item)
 

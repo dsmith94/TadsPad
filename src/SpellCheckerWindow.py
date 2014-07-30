@@ -6,13 +6,15 @@
 import wx
 import atd
 import os
+import codecs
+
 
 class SpellCheckWindow(wx.Dialog):
     def __init__(self, parent, errors, editor, project):
         wx.Dialog.__init__(self, None)
 
         # set up spell check analyze window
-        self.title_prefix = "Spell\Grammar Check: "
+        self.title_prefix = "Spell Check: "
         r = wx.Display().GetGeometry()
         self.SetSize(wx.Size(r.Width / 2, r.Height / 2))
         self.editor = editor
@@ -100,31 +102,36 @@ class SpellCheckWindow(wx.Dialog):
         # ignore error, and add this error string to ignored word list
         self.ignore_word(self.error.string)
         for error in self.errors:
-            if error.string is self.error.string:
+            if error.string == self.error.string:
                 self.errors.remove(error)
         self.check_next_word()
 
     def ignore_word(self, new_word):
 
         # add word passed above to ignored words
-        ignore_file = open(os.path.join(self.project.path, "ignore.txt"), 'rU')
-        ignore_words = ignore_file.read()
-        ignore_file.close()
-        parsed_words = ignore_words.split("\n")
+        try:
+            with codecs.open(os.path.join(self.project.path, "ignore.txt"), 'rU', "utf-8") as ignore_file:
+                ignore_words = words.read()
+        except IOError, e:
+            MessageSystem.error("Not able to open file: " + e.filename, "File load error")
+        else:
+            parsed_words = ignore_words.split(u"\n")
 
-        # word already in file, abort
-        if new_word in parsed_words:
-            return
+            # word already in file, abort
+            if new_word in parsed_words:
+                return
 
-        # create new string structure to save to ignore.txt
-        parsed_words.append(new_word)
-        new_list = ""
-        for word in parsed_words:
-            if word != "":
-                new_list += word + '\n'
-        ignore_file = open(os.path.join(self.project.path, "ignore.txt"), 'w')
-        ignore_file.write(new_list)
-        ignore_file.close()
+            # create new string structure to save to ignore.txt
+            parsed_words.append(new_word)
+            new_list = u""
+            for word in parsed_words:
+                if word != "":
+                    new_list += word + u'\n'
+            try:
+                with codecs.open(os.path.join(self.project.path, "ignore.txt"), 'rU', "utf-8") as ignore_file:
+                    ignore_file.write(new_list)
+            except IOError, e:
+                MessageSystem.error("Not able to save file: " + e.filename, "File write error")
 
 
 __author__ = 'dj'

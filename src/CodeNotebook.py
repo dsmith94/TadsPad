@@ -38,6 +38,9 @@ class Notebook(Aui.AuiNotebook):
         self.modifys = []
         self.global_tokens = {}
 
+        # current find string for searches
+        self.current_find_string = u""
+
     def __getitem__(self, index):
         if index < self.GetPageCount():
             return self.GetPage(index)
@@ -272,8 +275,10 @@ class Notebook(Aui.AuiNotebook):
                     n = page.editor.Text.count(text)
                 else:
                     n = page.editor.Text.lower().count(text.lower())
-            status.SetStatusText("Found " + str(n) + " occurrences")
+            if status is not None:
+                status.SetStatusText("Found " + str(n) + " occurrences")
             page.editor.search_for(text, in_strings)
+            self.current_find_string = text
 
     def replace_string(self, old, new, status, in_strings=False, case_sensitive=True):
 

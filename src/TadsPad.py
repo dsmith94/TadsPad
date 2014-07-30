@@ -159,6 +159,12 @@ class MainWindow(wx.Frame):
         fr = FindReplaceWindow.FindReplaceWindow(self.project, self.notebook)
         fr.Show()
 
+    def find_next(self, event):
+
+        # find next instance of stirng
+        if self.notebook.current_find_string is not None:
+            self.notebook.find_string(self.notebook.current_find_string, None)
+
     def theme_window(self, event):
 
         # edit editor theme with dialog

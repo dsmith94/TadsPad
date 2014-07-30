@@ -24,7 +24,6 @@ class FindReplaceWindow(wx.Frame):
         self.AllFilesCheck.Bind(wx.EVT_RADIOBUTTON, self.OptionChecked)
         self.InFileCheck.Bind(wx.EVT_RADIOBUTTON, self.OptionChecked)
         self.OnlyInStrings = wx.CheckBox(parent=self, label="Search Only in Strings")
-        self.OnlyInSelection = wx.CheckBox(parent=self, label="Search Only in Selection")
         self.CaseSensitive = wx.CheckBox(parent=self, label="Case Sensitive Search")
         self.FindButton = wx.Button(parent=self)
         self.FindButton.SetHelpText("Find Text String")
@@ -50,14 +49,13 @@ class FindReplaceWindow(wx.Frame):
         buttons.Add(self.ReplaceFileButton)
         buttons.Add(self.CloseButton)
         sizer.Add(findLbl, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
-        sizer.Add(self.FindText, 0, wx.EXPAND | wx.ALL, border=r.Width / 150)
+        sizer.Add(self.FindText, 0, wx.EXPAND | wx.ALL | wx.TAB_TRAVERSAL, border=r.Width / 150)
         sizer.Add(replaceLbl, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
-        sizer.Add(self.ReplaceText, 0, wx.EXPAND | wx.ALL, border=r.Width / 150)
-        sizer.Add(self.InFileCheck, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
-        sizer.Add(self.AllFilesCheck, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
-        sizer.Add(self.OnlyInSelection, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
-        sizer.Add(self.OnlyInStrings, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
-        sizer.Add(self.CaseSensitive, 0, wx.EXPAND | wx.ALL, border=r.Width / 50)
+        sizer.Add(self.ReplaceText, 0, wx.EXPAND | wx.ALL | wx.TAB_TRAVERSAL, border=r.Width / 150)
+        sizer.Add(self.InFileCheck, 0, wx.EXPAND | wx.ALL | wx.TAB_TRAVERSAL, border=r.Width / 100)
+        sizer.Add(self.AllFilesCheck, 0, wx.EXPAND | wx.ALL | wx.TAB_TRAVERSAL, border=r.Width / 100)
+        sizer.Add(self.OnlyInStrings, 0, wx.EXPAND | wx.ALL | wx.TAB_TRAVERSAL, border=r.Width / 100)
+        sizer.Add(self.CaseSensitive, 0, wx.EXPAND | wx.ALL | wx.TAB_TRAVERSAL, border=r.Width / 50)
         sizer.Add(buttons, 0, wx.EXPAND | wx.ALL, border=r.Width / 100)
         self.SetBackgroundColour(self.FindButton.GetBackgroundColour())
         self.SetSizer(sizer)
@@ -76,7 +74,6 @@ class FindReplaceWindow(wx.Frame):
         # press find button event
         in_strings = self.OnlyInStrings.GetValue()
         case_sensitive = self.CaseSensitive.GetValue()
-        in_selection = self.OnlyInSelection.GetValue()
         if self.InFileCheck.GetValue():
             self.notebook.find_string(self.FindText.GetValue(), self.status, in_strings, case_sensitive)
         else:
@@ -84,7 +81,7 @@ class FindReplaceWindow(wx.Frame):
             # we're search whole project, use the FindSearchResults system
             find = FindSearchResults.Window(self.FindText.GetValue(), self.notebook, self.project, in_strings, case_sensitive)
             find.Show()
-        self.Destroy()
+            self.Destroy()
 
     def ReplaceButtonPress(self, event):
 
