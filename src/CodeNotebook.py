@@ -37,6 +37,7 @@ class Notebook(Aui.AuiNotebook):
         self.classes = {}
         self.modifys = []
         self.global_tokens = {}
+        self.actions = []
 
         # current find string for searches
         self.current_find_string = u""
@@ -60,6 +61,8 @@ class Notebook(Aui.AuiNotebook):
                     self.classes = pickle.load(the_file)
                 with open(os.path.join(path, "globals.dat"), 'rb') as the_file:
                     self.global_tokens = pickle.load(the_file)
+                with open(os.path.join(path, "actions.dat"), 'rb') as the_file:
+                    self.actions = pickle.load(the_file)
             except IOError:
                 MessageSystem.error("Could not read file: " + path, path + " corrupted")
             return
@@ -68,7 +71,7 @@ class Notebook(Aui.AuiNotebook):
         self.classes = {}
         self.global_tokens = {}
         for l in project.libraries:
-            parse_library(l, path, self.classes, self.modifys, self.global_tokens)
+            parse_library(l, path, self.classes, self.modifys, self.global_tokens, self.actions)
 
         # now that the heavy lifting is done, save the classes to file
         if not os.path.exists(path):
@@ -78,6 +81,8 @@ class Notebook(Aui.AuiNotebook):
                 pickle.dump(self.classes, output)
             with open(os.path.join(path, "globals.dat"), 'wb') as output:
                 pickle.dump(self.global_tokens, output)
+            with open(os.path.join(path, "actions.dat"), 'wb') as output:
+                pickle.dump(self.actions, output)
         except IOError, e:
             MessageSystem.error("Could not save file: " + e.filename, "File write error")
             return
@@ -300,7 +305,7 @@ class Notebook(Aui.AuiNotebook):
                 else:
                     n = page.editor.Text.lower().count(old.lower())
             status.SetStatusText("Replaced 1 of " + str(n) + " occurrences")
-            page.editor.replace_with(old, new, in_strings, case_sensitive)
+            page.editor.replace_with(old, new, -1, in_strings, case_sensitive)
 
     def replace_all_string(self, old, new, status, in_strings=False, case_sensitive=True):
 
@@ -371,7 +376,7 @@ class Notebook(Aui.AuiNotebook):
             page.editor.scheme.update_colors(page.editor)
 
 
-def parse_library(library, current_path, classes, modifys, global_tokens):
+def parse_library(library, current_path, classes, modifys, global_tokens, actions):
 
     # firstly, skip the system library
     if library == 'system':
@@ -408,7 +413,7 @@ def parse_library(library, current_path, classes, modifys, global_tokens):
 
         # open and read source code file
         # only get globals from misc.t, there're all we need
-        TadsParser.search(path, classes, modifys, global_tokens)
+        TadsParser.search(path, classes, modifys, global_tokens, actions)
 
         # update dialog onscreen
         load_dlg.Update(index, source + ".t")

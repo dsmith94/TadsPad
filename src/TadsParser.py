@@ -140,7 +140,7 @@ class TObject(TClass):
         return result
 
 
-def search(filename, final_classes, final_modifys, final_globals):
+def search(filename, final_classes, final_modifys, final_globals, final_actions):
 
     """
     search given filename, and populate classes, modifys and globals
@@ -149,19 +149,57 @@ def search(filename, final_classes, final_modifys, final_globals):
     classes = {}
     modifys = []
     global_objects = {}
+    actions = []
 
     # open filename, harvest data from buffer
-    with open(filename, 'rU') as fb:
-        uncleaned = fb.read()
-        cleaned = clean(uncleaned)
-        classes.update(class_search(cleaned, uncleaned, filename))
-        modifys.extend(modify_search(cleaned, filename))
-        global_search(cleaned, uncleaned, filename, classes.values(), modifys, global_objects)
+    from codecs import open as open_unicode
+    try:
+        with open_unicode(filename, 'rU', "utf-8") as fb:
+            uncleaned = fb.read()
+            cleaned = clean(uncleaned)
+            classes.update(class_search(cleaned, uncleaned, filename))
+            modifys.extend(modify_search(cleaned, filename))
+            global_search(cleaned, uncleaned, filename, classes.values(), modifys, global_objects)
+            actions.extend(action_search(cleaned))
 
-    # add to our collective classes, modifys, global objects
-    final_classes.update(classes)
-    final_modifys.extend(modifys)
-    final_globals.update(global_objects)
+    except IOError, e:
+        MessageSystem.error("Could not load file: " + e.filename, "File read error")
+
+    else:
+
+        # add to our collective classes, modifys, global objects
+        final_classes.update(classes)
+        final_modifys.extend(modifys)
+        final_globals.update(global_objects)
+        final_actions.extend(actions)
+
+
+def action_search(code):
+
+    """
+    Find all action definitions in passed string, return list
+    """
+
+    result = []
+    tokens = (u"DefineIAction", u"DefineTAction", u"DefineTIAction", u"DefineTIAAction")
+
+    # prepare code by cleaning it and splitting into lines
+    lines = clean(code).split(u'\n')
+    for line in lines:
+
+        # search each line for our tokens
+        for token in tokens:
+
+            # do we have action in this line?
+            if token in line:
+
+                # found action, get name of action for our list
+                start = line.find(token) + len(token) + 1
+                end = len(line.strip()) - 1
+                name = line[start:end]
+                result.append(name)
+
+    return result
 
 
 def inherit_search(c, classes):
@@ -272,13 +310,6 @@ def get_members(class_list, classes, modifys=None):
 
     """
     return members affiliated with a list of unicode class keys, with data from classes dict passed
-    if modifys:
-        print classes['Thing'].members.keys()
-        print
-        for m in modifys:
-            if m.name == 'Thing':
-                print m.members
-
     """
 
     result = []
@@ -299,7 +330,6 @@ def get_members(class_list, classes, modifys=None):
                 for m in modifys:
                     if m.name == c or m.name in classes[c].inherits:
                         result.extend(m.members.values())
-
 
     return result
 

@@ -10,19 +10,25 @@ import SpellCheckerWindow
 import MessageSystem
 import os
 import embedded
+import CodeCompletion
 import xml.etree.ElementTree as ET
 
-# english defaults for verify, check
+# english defaults for verify, check , etc...
 verify_token = u"verify"
 check_token = u"check"
 action_token = u"action"
 direct_token = u"dobjFor"
 indirect_token = u"iobjFor"
+accessory_token = u"aobjFor"
 remap_direct_token = u"asDobjFor"
 remap_indirect_token = u"asIobjFor"
-inObj_suggestions = u"preCond", verify_token + u"()", check_token + u"()", action_token + u"()"
+remap_accessory_token = u"asAobjFor"
+inObj_suggestions = (u"preCond", verify_token + u"()", check_token + u"()", action_token + u"()")
 verify_suggestions = (u"logicalRank(rank, key);", u"dangerous", u"illogicalNow(msg, params);", u"illogical(msg, params);",
                       u"illogicalSelf(msg, params);", u"nonObvious", u"inaccessible(msg, params);")
+q_suggestions = (u"scopeList(actor)", u"topicScopeList()", u"inLight(a)", u"canSee(a, b)", u"canHear(a, b)",
+                 u"canSmell(a, b)", u"canReach(a, b)", u"sightBlocker(a, b)", u"reachBlocker(a, b)",
+                 u"soundBlocker(a, b)", u"scentBlocker(a, b)")
 
 
 # colors to tags list
@@ -62,21 +68,8 @@ pattern_enclosure = re.compile("\n\s*\{")
 pattern_object = re.compile("\+*\s*([a-zA-Z]*):")
 pattern_classes = re.compile(": ([\w*|,|\s])*")
 
-# code analysis filter system
-# use these presets to analyze a block of code for suggestions
-# note the analyzer can be broken down into three parts:
-# 1. the enclosure, 2. the suggestions for the enclosure, and 3. special flags for the enclosure
-analyzer = (verify_token, verify_suggestions, ('objects', 'self')), \
-           (action_token, None, ('objects', 'self')), \
-           (check_token, None, ('objects', 'self')), \
-           (".", None, 'members'), (":", None, 'classes'), \
-           ('@', None, 'objects'), \
-           (direct_token, inObj_suggestions, {}), \
-           (indirect_token, inObj_suggestions, {}), \
-           (remap_direct_token, None, {'self': None, 'filter': [direct_token, indirect_token], 'prefix': 'as'})
-
 # defaults when editing outside a template
-outside_template = u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class", u"modify"
+outside_template = (u"DefineIAction(Verb)", u"DefineTAction(Verb)", u"DefineTIAction(Verb)", u"VerbRule(Verb)", u"class", u"modify")
 
 # reserved keywords for tads language
 reserved_words = ("break", "case", "catch", "class", "case", "continue", "do", "default", "delete", "else", "enum",
@@ -170,6 +163,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         self.filename = "untitled"
         self.path = ""
 
+        # track whether we're in standard coding
+        self.in_standard_code = False
+
         # check brace matching
         self.Bind(wx.stc.EVT_STC_UPDATEUI, self.update_ui)
 
@@ -208,6 +204,26 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # current template
         self.template = None
 
+    def no_semicolon(self):
+
+        """
+        Look for a lack of semicolon, usually after we've just added a class or object
+        """
+
+        # look for semicolon or alphanumeric
+        position = self.GetCurrentPos()
+        for c in self.Text[position:-1]:
+            if c == u';':
+
+                # we have semicolon, return false
+                return False
+
+            if not c.isspace():
+
+                # return otherwise if non-white char is found
+                return True
+        return true
+
     def on_char_added(self, event):
 
         # get context
@@ -224,13 +240,14 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             # check if we've just added an object or class
             line = self.GetCurrentLine()
             if line > 0:
-                search_line = self.Text.split('\n')[line - 1]
+                search_line = self.GetLineUTF8(line - 1)
                 if search_line:
-                    if search_line[0] == '+' or ':' in search_line and search_line[0].isalpha():
-                        self.AddText("\n;\n")
-                        self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
-                        self.SetAnchor(self.GetAnchor() - 3)
-                        self.SetCurrentPos(self.GetCurrentPos() - 3)
+                    if search_line[0] == u'+' or u':' in search_line and search_line[0].isalpha():
+                        if self.no_semicolon():
+                            self.AddText(u"\n;\n")
+                            self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
+                            self.SetAnchor(self.GetAnchor() - 3)
+                            self.SetCurrentPos(self.GetCurrentPos() - 3)
                         return
 
             # otherwise, standard auto-indent
@@ -254,14 +271,22 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.SetAnchor(new_position)
             self.SetCurrentPos(new_position)
 
-        # when quotes added, autoadd quotes
-        if event.GetKey() == 34:
-            self.replace_with_enclosure(u"\" \"")
-        #if event.GetKey() == 39:
-        #    self.replace_with_enclosure(u" \'\'")
-
         # handle autocompletion too
         self.auto_complete()
+
+        # when quotes added, autoadd quotes
+        if event.GetKey() == 34:
+
+            # handle autoadd quotes differently when in standard coding
+            if self.in_standard_code:
+                self.replace_with_enclosure(u"\" \";")
+                self.SetAnchor(self.GetAnchor() - 1)
+                self.SetCurrentPos(self.GetCurrentPos() - 1)
+            else:
+                self.replace_with_enclosure(u"\" \"")
+
+        #if event.GetKey() == 39:
+        #    self.replace_with_enclosure(u" \'\'")
 
     def replace_with_enclosure(self, enclosure):
 
@@ -284,6 +309,21 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # we may choose to code templates
         selection = event.GetText()
 
+        # insert any of the inObj suggestions, add brackets
+        if selection in inObj_suggestions:
+            indent = self.GetLineIndentation(self.GetCurrentLine())
+            self.AutoCompCancel()
+            self.WordLeftExtend()
+            self.ReplaceSelection(selection + u'\n{\n\n}')
+            line = self.GetCurrentLine()
+            self.SetAnchor(self.GetAnchor() - 1)
+            self.SetCurrentPos(self.GetCurrentPos() - 1)
+            self.SetLineIndentation(line - 2, indent)
+            self.SetLineIndentation(line - 1, indent + (self.GetIndent()))
+            self.SetAnchor(self.GetAnchor() - 1)
+            self.SetCurrentPos(self.GetCurrentPos() - 1)
+            self.SetLineIndentation(line, indent)
+
         # for when we insert anything ending in the word "Desc" add double quotes
         if selection[-4:] == u"Desc":
             self.replace_with_enclosure(selection + u" = \" \"")
@@ -296,6 +336,13 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if selection == u"regions":
             self.replace_with_enclosure(selection + u" = [  ]")
 
+        # inherited
+        if selection[:9] == u"inherited":
+            if self.in_standard_code:
+                self.AutoCompCancel()
+                self.WordLeftExtend()
+                self.ReplaceSelection(selection + u';')
+
         # for define indirect action
         if u"DefineIAction" in selection:
             self.InsertText(self.GetCurrentPos(), self.insert_indent(1) + u"execAction(cmd)" + self.insert_indent(1) +
@@ -304,11 +351,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # for T action
         if u"DefineTAction" in selection:
-            self.InsertText(self.GetCurrentPos(), self.insert_indent(0) + ";")
+            self.InsertText(self.GetCurrentPos(), self.insert_indent(0) + u";")
 
         # for TI action
         if u"DefineTIAction" in selection:
-            self.InsertText(self.GetCurrentPos(), self.insert_indent(0) + ";")
+            self.InsertText(self.GetCurrentPos(), self.insert_indent(0) + u";")
 
         # for new verb rules
         if u"VerbRule" in selection:
@@ -345,14 +392,18 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         if obj:
             if obj in self.notebook.objects:
                 members = []
+
                 # remove following line if usefulness is not demonstrated soon
-                #members.extend([m.name for m in TadsParser.get_members(self.notebook.objects[obj].inherits, self.notebook.classes, self.notebook.modifys)])
                 members.extend([m.name for m in self.notebook.objects[obj].keywords])
                 members.extend([m.name for i in self.notebook.objects[obj].inherits for m in TadsParser.get_members(self.notebook.classes[i].inherits, self.notebook.classes, self.notebook.modifys)])
-                print [mem for m in self.notebook.modifys for mem in m.members]
                 return members
             else:
-                return 'no object'
+
+                # special rules for Q object
+                if obj == u'Q':
+                    return q_suggestions
+                else:
+                    return 'no object'
         return None
 
     def find_object_template(self, code):
@@ -377,20 +428,23 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.template.inherits = inherits
             self.template.members = TadsParser.get_members(self.template.inherits, self.notebook.classes, self.notebook.modifys)
 
-
     def auto_complete(self):
 
         # engine to analyze code suggest keywords
         # conducted in a series of stages
 
-        # stage 1: clean the code to be used, so the parser doesn't get fouled by unneeded keywords
-        code = self.Text[0:self.GetAnchor() - 1]
-        code = clean_string(code)
+        # stage 1: get context of caret for code completion
+        full_line, caret = self.GetCurLine()
+        start = self.Text[:self.GetCurrentPos()].rfind(u'\n;\n')
+        if start < 0:
+            start = 0
+        cleaned = clean_string(self.Text[start:self.GetCurrentPos()])
+        context = CodeCompletion.context(caret, full_line, cleaned)
 
         # stage 2: take the processed code and find
         # the classes of the object we're editing, plus the present enclosures
         # and only continue if some suggestions are present
-        suggestions = self.build_suggestions(code)
+        suggestions = self.build_suggestions(context, cleaned)
         if not suggestions:
             self.AutoCompCancel()
             return
@@ -401,72 +455,110 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         present_word = self.get_word()
         if len(present_word) < 1:
             return
-        if present_word is "=":
+        if "=" in present_word:
             return
         if len(suggestions) > 0:
             self.AutoCompShow(len(present_word), suggestions)
         else:
             self.AutoCompCancel()
 
-    def build_suggestions(self, code):
+    def build_suggestions(self, context, code):
 
         """
-        build suggestions from the code passed above
+        build suggestions from the context and code passed above
         """
 
         # this is unfortunately quite complex, because of the nature of code completion
         results = []
         full_line, caret = self.GetCurLine()
-        context = search(code, full_line[:caret])
+        line = full_line[:caret]
+
+        # by default, we are not in standard coding
+        self.in_standard_code = False
 
         # update object template
         self.find_object_template(code)
 
         # analyze code based on present template and line in context
-        for enclosure, suggestions, flags in analyzer:
-            if enclosure in context:
-                if suggestions:
-                    results.extend(suggestions)
-                if 'classes' in flags:
-                    results = self.notebook.classes
-                if 'members' in flags:
-                    members = self.find_object_methods(full_line[:caret])
-                    if members:
-                        if members == 'no object':
-                            # no object on other end of period - return blank
-                            return
-                        results = members
-                if 'objects' in flags:
-                    results.extend(self.notebook.objects)
-                    results.extend(self.notebook.global_tokens)
-                if 'self' in flags:
-                    if self.template:
-                        results.extend(m.name for m in self.template.keywords)
-                if 'filter' in flags:
-                    results = [r for f in flags['filter'] for r in results if f in r]
-                if 'prefix' in flags:
-                    results = [flags['prefix'] + r.title() for r in results]
+        if 'classes' in context:
+            results.extend(self.notebook.classes)
+        if 'properties' in context:
+            members = self.find_object_methods(line)
+            if members:
+                if members == 'no object':
+                    # no object on other end of period - return blank
+                    return
+                context.add('no template suggestions')
+                results = members
+        if 'verify' in context:
+            results.extend(verify_suggestions)
+        if 'objects' in context:
+            results.extend(self.notebook.objects)
+            results.extend(self.notebook.global_tokens)
+        if 'actions' in context:
+            results = self.notebook.actions
+            context.add('no template suggestions')
+        for token in (direct_token, indirect_token, accessory_token):
+            if token in context:
+                if verify_token not in code and check_token not in code and action_token not in code:
+                    results = [i for i in inObj_suggestions]
+                    context.add('no template suggestions')
+                    context.add('properties')
+                    break
+        for remap in (remap_direct_token, remap_indirect_token, remap_accessory_token):
+            if remap in context:
+                results = [remap + u"(" + x + u")" for x in self.notebook.actions]
+                context.add('no template suggestions')
+                break
 
-        # still no results, figure out if we're in a object template
-        if not results:
+        # next figure out if we're in a object template
+        # if not results:
+        if 'no template suggestions' not in context:
             if self.template:
                 results.extend([m.name for m in self.template.members if hasattr(m, 'name')])
                 results.extend(self.template.keywords)
-                results.extend(self.notebook.objects)
             else:
-                results = outside_template
+                results = [i for i in outside_template]
 
         # add reserved tads words if we are in a bracketed enclosure
         # remove the objFor suggestions
-        if u"{" in code:
-            results.extend(enclosure_suggestions)
-            results = [entry for entry in results if u"objFor" not in entry]
+        # only do this next bit of code if "properties" is not a context requirement
+        if "properties" not in context:
+            if u"{" in code:
+                results = self.get_standard_coding_suggestions(results)
+                inherited = get_inherited(code)
+                if inherited is not None:
+                    results.append(u'inherited(' + inherited + u')')
+                else:
+                    results.append(u'inherited')
+
+                # flag they we're in standard code
+                self.in_standard_code = True
+
+            else:
+
+                # same deal if we're in << enclosure in quotes
+                if u"<<" in line and u">>" not in line:
+                    results = self.get_standard_coding_suggestions(results)
 
         # finalize for return
         results = list(set(results))
         results = filter_suggestions(self.get_word(), results)
         results.sort()
         return '^'.join(results)
+
+    def get_standard_coding_suggestions(self, results):
+
+        """
+        Take the list passed above and extend it so we're ready for standard coding
+        """
+
+        suggestions = (enclosure_suggestions, self.notebook.objects, self.notebook.classes)
+        [results.extend(s) for s in suggestions]
+
+        # always remove objFor stuff for standard coding
+        results = [entry for entry in results if u"objFor" not in entry]
+        return results
 
     def get_word(self):
 
@@ -589,7 +681,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.SetAnchor(location)
             self.SetCurrentPos(location + textLength)
 
-    def replace_with(self, old, new, in_strings=False, case_sensitive=True):
+    def replace_with(self, old, new, minPos, in_strings=False, case_sensitive=True):
 
         # replace one string within selection
         if in_strings:
@@ -598,7 +690,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             search_in_text = self.Text
         maxPos = len(search_in_text)
         textLength = len(new)
-        minPos = self.GetAnchor()
+        if minPos == -1:
+            minPos = self.GetAnchor()
         if not case_sensitive:
             old = old.lower()
             search_in_text = search_in_text.lower()
@@ -653,11 +746,11 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         errors = [e for e in errors if e.description == "Spelling"]
 
         # and remove duplicates
-        clean_list = []
-        for e in errors:
-            if e.string not in [l.string for l in clean_list]:
-                clean_list.append(e)
-        errors = clean_list
+        #clean_list = []
+        #for e in errors:
+        #    if e.string not in [l.string for l in clean_list]:
+        #        clean_list.append(e)
+        #errors = clean_list
 
         # we now have a list of spelling errors, display to user
         if errors:
@@ -786,30 +879,6 @@ def find_global_token(search_string, tokens):
     return None
 
 
-def search(code, line):
-
-    # scan current code for possible enclosures we're in
-    # look first in current line, then in all code
-    # the order here is important, by the way
-    if u'@' in line:
-        return '@'
-    if len(line) > 2:
-        if line[0] == '+' or line[1] == '+':
-            return ':'
-    if u':' in line:
-        return ':'
-    if u'.' in line:
-        tokens = re.split('[{0}]'.format(re.escape(u" [](){};")), line)
-        if tokens:
-            if u"." in tokens[-1]:
-                return '.'
-    remaps = [t for t in [direct_token, indirect_token] if t in line]
-    if remaps:
-        return [remap_direct_token]
-    tokens = verify_token, action_token, check_token, direct_token, indirect_token
-    return [t for t in tokens if t in code]
-
-
 def clean_string(code):
 
     """
@@ -818,11 +887,27 @@ def clean_string(code):
 
     code = TadsParser.clean(code, False)
 
-    # remove bracketed enclosures
-    code = consolidate_brackets(code)
-    code = remove_bracketed_enclosures(code)
+    # remove brackets and action remaps too
+    process = (consolidate_brackets, remove_bracketed_enclosures, remove_remaps)
+    for cleaning in process:
+        code = cleaning(code)
 
     return code
+
+
+def remove_remaps(code):
+
+    """
+    Return a string of code containing no action-remaps so we don't confuse code analysis engine
+    """
+
+    code = code.split(u"\n")
+    tokens = (remap_direct_token, remap_indirect_token, remap_accessory_token)
+    for index, line in enumerate(code[:]):
+        for token in tokens:
+            if token in line:
+                code[index] = line.replace(u'objFor', u'xxxxxx')
+    return u'\n'.join(code)
 
 
 def consolidate_brackets(code):
@@ -877,6 +962,30 @@ def clean_string_old(code):
     removed_strings = remove_bracketed_enclosures(removed_strings)
 
     return removed_strings
+
+
+def get_inherited(code):
+
+    """
+    Retrieve inherited parameters, return if they exist, skip objFors
+    """
+
+    # cut out objFors
+    clip_to = 0
+    for token in (direct_token, indirect_token, accessory_token):
+        if token in code:
+            clip_to = code.find(u'\n', code.find(token))
+    code = code[clip_to:]
+
+    # now, continue with our regularly shceduled algorithm
+    end = code.find(u'){')
+    start = code.find(u'(')
+    if start > -1:
+        if end > start:
+                parameters = code[start + 1:end]
+                if parameters != u"":
+                    return parameters
+    return None
 
 
 __author__ = 'dj'

@@ -7,6 +7,8 @@ import wx
 import atd
 import os
 import codecs
+import TadsParser
+import MessageSystem
 
 
 class SpellCheckWindow(wx.Dialog):
@@ -21,11 +23,12 @@ class SpellCheckWindow(wx.Dialog):
         self.errors = errors
         self.error = atd.Error
         self.project = project
+        self.error_location = -1
         self.suggestions_ctrl = wx.ListCtrl(parent=self, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         self.suggestions_ctrl.InsertColumn(0, "Suggestions List", width=r.Width / 2)
         self.suggestions_ctrl.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.suggestion_activated)
         self.suggestions_ctrl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.suggestion_selected)
-        lbl_replace = wx.StaticText(self, -1, "Replace all with:")
+        lbl_replace = wx.StaticText(self, -1, "Replace this instance with:")
         self.txt_replace = wx.TextCtrl(self, -1, "", size=(175, -1), style=wx.SUNKEN_BORDER)
         sizer = wx.BoxSizer(wx.VERTICAL)
         buttons = wx.BoxSizer(wx.HORIZONTAL)
@@ -58,12 +61,13 @@ class SpellCheckWindow(wx.Dialog):
         # otherwise, check for next error in list
         else:
             self.error = self.errors.pop(0)
-            error_location = self.editor.Text.find(self.error.string)
-            if error_location < 0:
+            text = TadsParser.extract_strings(self.editor.Text)
+            self.error_location = text.find(self.error.string)
+            if self.error_location < 0:
                 self.check_next_word()
                 return
-            self.editor.GotoPos(error_location)
-            self.editor.SetSelection(error_location, error_location + len(self.error.string))
+            self.editor.GotoPos(self.error_location)
+            self.editor.SetSelection(self.error_location, self.error_location + len(self.error.string))
             self.SetTitle(self.title_prefix + self.error.string)
             self.suggestions_ctrl.DeleteAllItems()
             for suggestion in self.error.suggestions:
@@ -72,7 +76,7 @@ class SpellCheckWindow(wx.Dialog):
     def replace(self, old_text, new_text):
 
         # replace old text with new text
-        self.editor.Text = self.editor.Text.replace(old_text, new_text)
+        self.editor.replace_with(old_text, new_text, self.error_location, in_strings=True)
         self.check_next_word()
 
     def suggestion_activated(self, event):
@@ -111,7 +115,7 @@ class SpellCheckWindow(wx.Dialog):
         # add word passed above to ignored words
         try:
             with codecs.open(os.path.join(self.project.path, "ignore.txt"), 'rU', "utf-8") as ignore_file:
-                ignore_words = words.read()
+                ignore_words = ignore_file.read()
         except IOError, e:
             MessageSystem.error("Not able to open file: " + e.filename, "File load error")
         else:
@@ -128,7 +132,7 @@ class SpellCheckWindow(wx.Dialog):
                 if word != "":
                     new_list += word + u'\n'
             try:
-                with codecs.open(os.path.join(self.project.path, "ignore.txt"), 'rU', "utf-8") as ignore_file:
+                with codecs.open(os.path.join(self.project.path, "ignore.txt"), 'w', "utf-8") as ignore_file:
                     ignore_file.write(new_list)
             except IOError, e:
                 MessageSystem.error("Not able to save file: " + e.filename, "File write error")
