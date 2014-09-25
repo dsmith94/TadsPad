@@ -70,6 +70,10 @@ class TadsProject():
         libraries = "\n-lib "
         libraries += "\n-lib ".join(self.libraries)
         text = text.replace('$LIBRARY$', libraries)
+
+        # fix any weird carriage returns
+        text = text.replace('\n\n\n', '')
+
         try:
             with open(os.path.join(path_string, self.name + ".t3m"), 'w') as finished:
                 finished.write(text)

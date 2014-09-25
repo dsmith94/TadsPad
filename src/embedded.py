@@ -125,8 +125,6 @@ web_makefile = u"""
 # discarded, the formatting might be changed, and some option
 # settings might be modified.
 
-
-
 -o $NAME$.t3
 -pre
 -D LANGUAGE=english
