@@ -5,7 +5,6 @@
 #
 
 import TadsParser
-import re
 
 
 # english action construction tokens
@@ -106,17 +105,18 @@ def __search_line(line, caret):
     if u'[' in line and u']' not in line:
         return 'objects'
     if u'=' in line:
-        return 'objects'
+        if u'.' in line:
+            if line.find(u'=') > line.find(u'.'):
+                return 'objects'
+        else:
+            return 'objects'
     if len(line) > 2:
         if line[0] == '+' or line[1] == '+':
             return 'classes'
     if u':' in line:
         return 'classes'
     if u'.' in line:
-        tokens = re.split('[{0}]'.format(re.escape(u" [](){};")), line)
-        if tokens:
-            if u"." in tokens[-1]:
-                return 'properties'
+        return 'properties'
     return None
 
 

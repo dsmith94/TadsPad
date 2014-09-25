@@ -222,9 +222,14 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
                 # return otherwise if non-white char is found
                 return True
-        return true
+        return True
 
     def on_char_added(self, event):
+
+        key = event.GetKey()
+
+        # certain keycodes will cancel autocomp, like spaces or brackets
+        cancel_codes = (32, 123, 125, 91, 93, 40, 41, 61, 43, 46, 47, 92, 45, 42, 39, 38, 37, 36, 35)
 
         # get context
         full_line, caret = self.GetCurLine()
@@ -235,7 +240,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             return
 
         # when return key char is added, handle autoindent
-        if event.GetKey() == 10:
+        if key == 10:
 
             # check if we've just added an object or class
             line = self.GetCurrentLine()
@@ -254,7 +259,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.auto_indent()
 
         # when bracket is added, autoadd matching close bracket
-        if event.GetKey() == 123:
+        if key == 123:
             addNewLine = u""
             if full_line.strip() != u"{":
                 addNewLine = u"\n"
@@ -272,10 +277,13 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.SetCurrentPos(new_position)
 
         # handle autocompletion too
-        self.auto_complete()
+        if key not in cancel_codes:
+            self.auto_complete()
+        else:
+            self.AutoCompCancel()
 
         # when quotes added, autoadd quotes
-        if event.GetKey() == 34:
+        if key == 34:
 
             # handle autoadd quotes differently when in standard coding
             if self.in_standard_code:
@@ -385,17 +393,29 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
     def find_object_methods(self, line):
 
-        # find object on a single line
-        # return methods
-        tokens = re.split('[{0}]'.format(re.escape(u" [](){};")), line)
-        obj = tokens[-1].split(u".")[0]
+        """
+        find object on a single line
+        return methods
+        """
+
+        # first get everything after character delineators
+        token = u""
+        delins = u" [](){};"
+        for c in reversed(line):
+            if c in delins:
+                break
+            else:
+                token = c + token
+
+        # if we have an object to edit, find it in the notebook object database (by name)
+        obj = token[:token.find(u".")]
         if obj:
             if obj in self.notebook.objects:
                 members = []
 
                 # remove following line if usefulness is not demonstrated soon
                 members.extend([m.name for m in self.notebook.objects[obj].keywords])
-                members.extend([m.name for i in self.notebook.objects[obj].inherits for m in TadsParser.get_members(self.notebook.classes[i].inherits, self.notebook.classes, self.notebook.modifys)])
+                members.extend([m.name for i in self.notebook.objects[obj].inherits if i in self.notebook.classes for m in TadsParser.get_members(self.notebook.classes[i].inherits, self.notebook.classes, self.notebook.modifys)])
                 return members
             else:
 

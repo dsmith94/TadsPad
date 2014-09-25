@@ -63,7 +63,10 @@ def macrun(the_thread, the_project, compiler, interpreter, script="", flags="", 
         wx.CallAfter(MessageSystem.show_message, "Compile complete")
         path = os.path.join(the_project.path, the_project.name + ".t3")
         with open(os.path.join(the_project.path, "compile.sh"), mode='w') as compile_script:
-            compile_script.write('#!/bin/sh\n' + interpreter + ' ' + '-R' + ' ' + + input_path + ' ' + + path)
+            if not project.web:
+                compile_script.write('#!/bin/sh\n' + interpreter + ' ' + '-R' + ' ' + + input_path + ' ' + + path)
+            else:
+                compile_script.write('#!/bin/sh\n' + interpreter + ' ' + '-N 44' + ' ' + path)
         playgame = subprocess.Popen(['open', '-a', terminal, os.path.join(the_project.path, "compile.sh")], shell=False)
     else:
         wx.CallAfter(MessageSystem.show_errors, output)
@@ -90,7 +93,12 @@ def nixrun(the_thread, the_project, compiler, interpreter, script="", flags="", 
     if exit_code == 0:
         wx.CallAfter(MessageSystem.show_message, "Compile complete")
         path = os.path.join(the_project.path, the_project.name + ".t3")
-        playgame = subprocess.Popen([terminal, '-e', interpreter, '-R', input_path, path], shell=False)
+
+        # on a non-web game, use the standard open process
+        if not the_project.web:
+            playgame = subprocess.Popen([terminal, '-e', interpreter, '-R', input_path, path], shell=False)
+        else:
+            playgame = subprocess.Popen([terminal, '-e', interpreter, '-N', '44', path], shell=False)
     else:
         wx.CallAfter(MessageSystem.show_errors, output)
 

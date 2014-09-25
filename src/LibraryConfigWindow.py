@@ -11,13 +11,19 @@ class Dialog(wx.Dialog):
         wx.Dialog.__init__(self, None, title="Re-configure Library Setup")
 
         # get extensions
-        path = os.path.join(ProjectFileSystem.get_project_root(), "extensions", "adv3Lite", "extensions")
+        path = os.path.join(ProjectFileSystem.get_project_root(), "extensions", "adv3Lite")
         filetree = os.walk(path, True)
         extensions = ProjectFileSystem.get_differences_lite()
         for root, dirs, files in filetree:
-            for f in files:
-                if f[-2:] == '.t':
-                    extensions.append('extensions/' + f[:-2])
+            for d in dirs:
+
+                # skip template and docs
+                if d != "template" and d != "docs":
+                    subpath = os.walk(os.path.join(path, d), True)
+                    for subroot, subdir, subfiles in subpath:
+                        for f in subfiles:
+                            if f[-2:] == '.t':
+                                extensions.append(os.path.join(d, f[:-2]))
 
         # build ui
         screen_geometry = wx.Display().GetGeometry()
@@ -32,6 +38,7 @@ class Dialog(wx.Dialog):
         self.liter.Bind(wx.EVT_RADIOBUTTON, self.custom_checked, id=wx.ID_ANY)
         self.custom = wx.RadioButton(self, -1, 'Custom')
         self.custom.Bind(wx.EVT_RADIOBUTTON, self.custom_checked, id=wx.ID_ANY)
+        self.web = wx.CheckBox(self, -1, 'Web Play')
         self.extensions = wx.CheckListBox(self, id=-1, choices=extensions)
         self.extensions.Enabled = False
         box_for_custom.Add(self.custom)
@@ -40,6 +47,7 @@ class Dialog(wx.Dialog):
         box_for_text.Add(self.lite)
         box_for_text.Add(self.liter)
         box_for_text.Add(box_for_custom)
+        box_for_text.Add(self.web)
         self.ok_button = wx.Button(self, wx.ID_OK, "&OK")
         cancel_button = wx.Button(self, wx.ID_CANCEL, "&Cancel")
         box_for_buttons.Add(self.ok_button, 0)
@@ -52,10 +60,14 @@ class Dialog(wx.Dialog):
         self.Fit()
         self.Update()
 
+        # and by default select all adv3Lite (not liter) files
+        for index, text in enumerate(self.extensions.GetStrings()):
+            if '/' not in text:
+                self.extensions.Check(index)
+
     def custom_checked(self, event):
 
         # when custom checkbox is clicked, ungray (or gray) extensions box
         self.extensions.Enabled = self.custom.GetValue()
-
 
 __author__ = 'dj'

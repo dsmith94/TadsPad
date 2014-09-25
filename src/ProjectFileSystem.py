@@ -18,6 +18,7 @@ from binascii import hexlify
 class TadsProject():
     def __init__(self):
         ## init the standard tads project for our subsystems
+        self.data = ""
         self.name = ""
         self.title = ""
         self.author = ""
@@ -29,13 +30,39 @@ class TadsProject():
         self.libraries = []
         self.files = []
         self.files.append("start.t")
+        self.web = False
         self.phrases = []   # special tags used in making new project files
 
     def write(self):
 
-        # write makefile, for compilation process
+        """
+        write makefile, for compilation process
+        """
+
+        # fix libraries, if using web then specify so
+        lib_buffer = []
+        for library in self.libraries:
+            if library == "../extensions/adv3Lite/adv3Lite" or library == "../extensions/adv3Lite/adv3Liter":
+                if library == "../extensions/adv3Lite/adv3Lite":
+                    if self.web:
+                        lib_buffer.append("../extensions/adv3Lite/adv3LiteWeb")
+                    else:
+                        lib_buffer.append("../extensions/adv3Lite/adv3Lite")
+                else:
+                    if self.web:
+                        lib_buffer.append("../extensions/adv3Lite/adv3LiterWeb")
+                    else:
+                        lib_buffer.append("../extensions/adv3Lite/adv3Liter")
+            else:
+                lib_buffer.append(library)
+        if self.web:
+            if "webui" not in lib_buffer:
+                lib_buffer.append("webui")
+        self.libraries = lib_buffer
+
+        # proceed with makefile
         path_string = os.path.join(get_project_root(), self.name)
-        text = embedded.makefile
+        text = self.data
         text = text.replace('$NAME$', self.name)
         files = "\n-source "
         files += "\n-source ".join([f[:-2] for f in self.files])
@@ -91,13 +118,19 @@ class NewProjectWindow(wx.Dialog):
         wx.Dialog.__init__(self, None, title="New Project...")
 
         # get extensions
-        path = os.path.join(get_project_root(), "extensions", "adv3Lite", "extensions")
+        path = os.path.join(get_project_root(), "extensions", "adv3Lite")
         filetree = os.walk(path, True)
         extensions = get_differences_lite()
         for root, dirs, files in filetree:
-            for f in files:
-                if f[-2:] == '.t':
-                    extensions.append('extensions/' + f[:-2])
+            for d in dirs:
+
+                # skip template and docs
+                if d != "template" and d != "docs":
+                    subpath = os.walk(os.path.join(path, d), True)
+                    for subroot, subdir, subfiles in subpath:
+                        for f in subfiles:
+                            if f[-2:] == '.t':
+                                extensions.append(os.path.join(d, f[:-2]))
 
         # build ui
         screen_geometry = wx.Display().GetGeometry()
@@ -129,6 +162,7 @@ class NewProjectWindow(wx.Dialog):
         self.liter.Bind(wx.EVT_RADIOBUTTON, self.custom_checked, id=wx.ID_ANY)
         self.custom = wx.RadioButton(self, -1, 'Custom')
         self.custom.Bind(wx.EVT_RADIOBUTTON, self.custom_checked, id=wx.ID_ANY)
+        self.web = wx.CheckBox(self, -1, 'Web Play')
         self.extensions = wx.CheckListBox(self, id=-1, choices=extensions)
         self.extensions.Enabled = False
         box_for_custom.Add(self.custom)
@@ -145,6 +179,7 @@ class NewProjectWindow(wx.Dialog):
         box_for_text.Add(self.lite)
         box_for_text.Add(self.liter)
         box_for_text.Add(box_for_custom)
+        box_for_text.Add(self.web)
         self.ok_button = wx.Button(self, wx.ID_OK, "&OK")
         self.ok_button.Enabled = False
         cancel_button = wx.Button(self, wx.ID_CANCEL, "&Cancel")
@@ -234,6 +269,10 @@ def get_differences_lite():
 
 def load_project(file_name):
 
+    """
+    Analyze project file at file name, build it into memory
+    """
+
     # load project from filename
     the_project = TadsProject()
     try:
@@ -248,17 +287,35 @@ def load_project(file_name):
         sources = re.compile("-source ([\s|\"*|a-zA-Z]*)")
         library = re.compile("-lib (.*)\n")
 
-        # get library used
+        # determine if it is a webgame
+        if "-D TADS_INCLUDE_NET" in file_text:
+
+            # we have a webgame!
+            the_project.web = True
+
+        # get libraries used
         match = library.findall(file_text)
         if match:
 
-            # found library, use it
+            # found libraries, use them
             the_project.libraries = match
 
         # now get list of sources
         the_project.files[:] = []
-        list_of_sources = sources.findall(file_text)
-        the_project.files = [s.strip('\n').strip('"').strip("'") + ".t" for s in list_of_sources]
+        start = file_text.find('\n##sources')
+        list_of_sources = sources.findall(file_text[start:])
+        the_project.files = [s.strip('\n').strip('"').strip("'") + ".t" for s in list_of_sources if s if s != 'tadsnet']
+
+        # now rewrite the sources part of the file in case we make any changes
+        the_project.data = file_text[:start] + '\n$LIBRARY$\n\n##sources $SOURCE$\n'
+
+        # remove the libraries from the source data
+        the_project.data = library.sub("", the_project.data)
+
+        # and get ready to replace the name when we need to
+        the_project.data = re.sub("-o (.*).t3\n", "-o $NAME$.t3\n", the_project.data)
+
+        # finish project setup - get name and path
         the_project.filename = os.path.basename(file_name)
         the_project.name = os.path.splitext(the_project.filename)[0]
         the_project.path = os.path.dirname(file_name)
@@ -292,6 +349,10 @@ def new_project(the_project):
     os.makedirs(os.path.join(path_string, the_project.name))
     os.makedirs(os.path.join(path_string, the_project.name, "obj"))
     path_string = os.path.join(path_string, the_project.name)
+    if the_project.web:
+        the_project.data = embedded.web_makefile
+    else:
+        the_project.data = embedded.makefile
     the_project.write()
     the_project.filename = the_project.name + ".t3m"
     the_project.path = path_string

@@ -85,7 +85,7 @@ blank = u"""#charset "us-ascii"
 
 """
 
-# embedded makefile
+# embedded standard makefile
 makefile = u"""
 # TADS 3 makefile
 #
@@ -112,6 +112,36 @@ $SOURCE$
 
 """
 
+# embedded web makefile
+web_makefile = u"""
+
+# TADS 3 makefile
+#
+# Warning: this file was mechanically generated.  You may edit this file
+# manually, but your changes might be modified or discarded when
+# you load this file into a TADS development tool.  The TADS tools
+# generally retain the comment at the start of the file and the
+# comment marked "##sources" below, but other comments might be
+# discarded, the formatting might be changed, and some option
+# settings might be modified.
+
+
+
+-o $NAME$.t3
+-pre
+-D LANGUAGE=english
+-w1
+-Fy obj -Fo obj
+-D TADS_INCLUDE_NET
+-source tadsnet
+$LIBRARY$
+
+##sources
+$SOURCE$
+
+"""
+
+
 # embedded ignore
 ignore = u"""
 us-ascii
@@ -122,6 +152,10 @@ $TITLE$
 $AUTHOR$
 $EMAIL$
 $FILENAME$
+dobj
+iobj
+subj
+obj
 """
 
 # embedded tips

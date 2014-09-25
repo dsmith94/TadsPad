@@ -808,12 +808,10 @@ def __scrub_all_quotes(code):
     Scrub code of " and ' style quotes
     """
     quotes = (u"\"", u"\'")
-    for quote in quotes:
-        code = __scrub_quotes(code, quote)
-    return code
+    return __scrub_quotes(code, quotes)
 
 
-def __scrub_quotes(code, quote_style):
+def __scrub_quotes(code, quotes):
 
     """
     Remove quoted strings (delineated by quote style) replaced with spaces from code passed as string, return result
@@ -821,17 +819,20 @@ def __scrub_quotes(code, quote_style):
 
     in_escape_sequence = False
     in_quotes = False
+    kind_of_quote = u''
     result = []
 
     # search character by character in code string
     for ch in code:
 
         # check for quote
-        if ch == quote_style and not in_escape_sequence:
+        if ch in quotes and not in_escape_sequence:
             if in_quotes:
-                in_quotes = False
+                if ch == kind_of_quote:
+                    in_quotes = False
             else:
                 in_quotes = True
+                kind_of_quote = ch
             result.append(ch)
             continue
 

@@ -378,8 +378,8 @@ class Notebook(Aui.AuiNotebook):
 
 def parse_library(library, current_path, classes, modifys, global_tokens, actions):
 
-    # firstly, skip the system library
-    if library == 'system':
+    # firstly, skip the system and webui library
+    if library == 'system' or library == 'webui':
         return
 
     # parse all classes/members in the presently selected world-model library

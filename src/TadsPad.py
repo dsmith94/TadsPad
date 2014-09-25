@@ -526,6 +526,7 @@ class MainWindow(wx.Frame):
             get_author = dlg.author.GetValue()
             get_email = dlg.email.GetValue()
             get_htmldesc = dlg.htmldesc.GetValue()
+            get_web = dlg.web.GetValue()
             get_desc = dlg.desc.GetValue()
             if dlg.lite.GetValue():
                 get_library.append("../extensions/adv3Lite/adv3Lite")
@@ -544,6 +545,7 @@ class MainWindow(wx.Frame):
                 self.project.title = get_title
                 self.project.name = get_name
                 self.project.author = get_author
+                self.project.web = get_web
                 self.project.libraries = get_library
                 self.project.email = get_email
                 self.project.desc = get_desc.replace('\n', '')
