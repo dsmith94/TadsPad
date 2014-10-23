@@ -65,14 +65,16 @@ class TadsProject():
         text = self.data
         text = text.replace('$NAME$', self.name)
         files = "\n-source "
-        files += "\n-source ".join([f[:-2] for f in self.files])
+        files += "\n-source ".join([f[:-2] for f in self.files]).strip() + '\n'
         text = text.replace('$SOURCE$', files)
-        libraries = "\n-lib "
-        libraries += "\n-lib ".join(self.libraries)
-        text = text.replace('$LIBRARY$', libraries)
+        libraries = "-lib "
+        libraries += "\n-lib ".join(self.libraries).strip() + '\n'
 
         # fix any weird carriage returns
-        text = text.replace('\n\n\n', '')
+        text = text.replace('\n\n\n', '\n')
+
+        # now puit in libs
+        text = text.replace('$LIBRARY$', libraries)
 
         try:
             with open(os.path.join(path_string, self.name + ".t3m"), 'w') as finished:
@@ -121,6 +123,9 @@ class NewProjectWindow(wx.Dialog):
     def __init__(self):
         wx.Dialog.__init__(self, None, title="New Project...")
 
+        # extensions to skip
+        skip = ("english.t", "grammar.t", "tokens.t")
+
         # get extensions
         path = os.path.join(get_project_root(), "extensions", "adv3Lite")
         filetree = os.walk(path, True)
@@ -134,7 +139,8 @@ class NewProjectWindow(wx.Dialog):
                     for subroot, subdir, subfiles in subpath:
                         for f in subfiles:
                             if f[-2:] == '.t':
-                                extensions.append(os.path.join(d, f[:-2]))
+                                if f not in skip:
+                                    extensions.append(os.path.join(d, f[:-2]))
 
         # build ui
         screen_geometry = wx.Display().GetGeometry()
@@ -167,6 +173,7 @@ class NewProjectWindow(wx.Dialog):
         self.custom = wx.RadioButton(self, -1, 'Custom')
         self.custom.Bind(wx.EVT_RADIOBUTTON, self.custom_checked, id=wx.ID_ANY)
         self.web = wx.CheckBox(self, -1, 'Web Play')
+        self.web.Bind(wx.EVT_CHECKBOX, self.web_checked, id=wx.ID_ANY)
         self.extensions = wx.CheckListBox(self, id=-1, choices=extensions)
         self.extensions.Enabled = False
         box_for_custom.Add(self.custom)
@@ -211,13 +218,23 @@ class NewProjectWindow(wx.Dialog):
         else:
             self.ok_button.Enabled = True
 
+    def web_checked(self, event):
+
+        # when web is checked, gray out advLite std t files
+
+        if self.extensions.Enabled:
+            if self.web.GetValue():
+                for index, text in enumerate(self.extensions.GetStrings()):
+                    if '/' not in text:
+                        self.extensions.Check(index, False)
+
     def custom_checked(self, event):
 
         # when custom checkbox is clicked, ungray (or gray) extensions box
         self.extensions.Enabled = self.custom.GetValue()
 
         # if the extensions are enabled, everything not in adv3lite is checked by default
-        if self.extensions.Enabled:
+        if self.extensions.Enabled and not self.web.GetValue():
             for index, text in enumerate(self.extensions.GetStrings()):
                 if '/' not in text:
                     self.extensions.Check(index)

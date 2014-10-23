@@ -210,17 +210,28 @@ class MainWindow(wx.Frame):
                     os.remove(classes)
                 if os.path.exists(custom):
                     os.remove(custom)
-                if dialog.lite.GetValue():
-                    get_library.append("../extensions/adv3Lite/adv3Lite")
                 if dialog.liter.GetValue():
                     get_library.append("../extensions/adv3Lite/adv3Liter")
-                if dialog.custom.GetValue():
+                if dialog.custom.GetValue() and not dialog.web.GetValue():
                     get_library.append("../extensions/adv3Lite/adv3Liter")
                     get_library.append(self.project.name + '_custom')
                     extensions = dialog.extensions.GetCheckedStrings()
+                if dialog.lite.GetValue():
+                    get_library.append("../extensions/adv3Lite/adv3Lite")
+                if dialog.web.GetValue():
+                    get_library.append("../extensions/adv3Lite/adv3Lite")
+                    if dialog.extensions.Enabled:
+                        get_library.append(self.project.name + '_custom')
+                        extensions = dialog.extensions.GetCheckedStrings()
+                self.project.web = dialog.web.GetValue()
                 self.project.libraries = get_library
+                if self.project.web:
+                    self.project.data = embedded.web_makefile
+                else:
+                    self.project.data = embedded.makefile
                 if extensions:
                     self.project.write_library(extensions)
+                self.project.write()
                 self.object_browser.rebuild_object_catalog()
                 self.project_browser.update_files()
 
@@ -519,6 +530,7 @@ class MainWindow(wx.Frame):
         get_email = ""
         get_htmldesc = ""
         get_desc = ""
+        get_web = False
         extensions = []
         if result == wx.ID_OK:
             get_name = ProjectFileSystem.remove_disallowed_filename_chars(dlg.game_name.GetValue())
@@ -532,45 +544,51 @@ class MainWindow(wx.Frame):
                 get_library.append("../extensions/adv3Lite/adv3Lite")
             if dlg.liter.GetValue():
                 get_library.append("../extensions/adv3Lite/adv3Liter")
-            if dlg.custom.GetValue():
+            if dlg.custom.GetValue() and not dlg.web.GetValue():
                 get_library.append("../extensions/adv3Lite/adv3Liter")
                 get_library.append(get_name + '_custom')
                 extensions = dlg.extensions.GetCheckedStrings()
+            if dlg.web.GetValue():
+                get_library.append("../extensions/adv3Lite/adv3Lite")
+                if dlg.extensions.Enabled:
+                    get_library.append(get_name + '_custom')
+                    extensions = dlg.extensions.GetCheckedStrings()
+
+            if get_name != "":
+
+                # we have a new project, let's build a directory for it
+                try:
+                    self.notebook.close_all()
+                    self.project.title = get_title
+                    self.project.name = get_name
+                    self.project.author = get_author
+                    self.project.web = get_web
+                    self.project.libraries = get_library
+                    self.project.email = get_email
+                    self.project.desc = get_desc.replace('\n', '')
+                    self.project.htmldesc = get_htmldesc.replace('\n', '')
+                    ProjectFileSystem.new_project(self.project)
+                    if extensions:
+                        self.project.write_library(extensions)
+                    self.notebook.load_page(self.project.path, "start.t")
+                    self.object_browser.rebuild_object_catalog()
+                    self.project_browser.update_files()
+
+                    # load classes data from tads project directory
+                    self.notebook.load_classes(self.project)
+                    self.Title = "TadsPad - " + self.project.name
+                    self.menus(True)
+                except Exception, e:
+
+                    # new project failed! tell user why and remove failed proj from memory
+                    MessageSystem.error(str(e), "Project Create Failure")
+                    self.project = None
+                    self.object_browser.DeleteAllItems()
+                    self.project_browser.DeleteAllItems()
+                    self.Title = "TadsPad"
+                    self.menus(False)
+                    self.notebook.close_all()
         dlg.Destroy()
-        if get_name != "":
-
-            # we have a new project, let's build a directory for it
-            try:
-                self.notebook.close_all()
-                self.project.title = get_title
-                self.project.name = get_name
-                self.project.author = get_author
-                self.project.web = get_web
-                self.project.libraries = get_library
-                self.project.email = get_email
-                self.project.desc = get_desc.replace('\n', '')
-                self.project.htmldesc = get_htmldesc.replace('\n', '')
-                ProjectFileSystem.new_project(self.project)
-                if extensions:
-                    self.project.write_library(extensions)
-                self.notebook.load_page(self.project.path, "start.t")
-                self.object_browser.rebuild_object_catalog()
-                self.project_browser.update_files()
-
-                # load classes data from tads project directory
-                self.notebook.load_classes(self.project)
-                self.Title = "TadsPad - " + self.project.name
-                self.menus(True)
-            except Exception, e:
-
-                # new project failed! tell user why and remove failed proj from memory
-                MessageSystem.error(str(e), "Project Create Failure")
-                self.project = None
-                self.object_browser.DeleteAllItems()
-                self.project_browser.DeleteAllItems()
-                self.Title = "TadsPad"
-                self.menus(False)
-                self.notebook.close_all()
 
     def spell_check(self, event):
 
@@ -594,6 +612,7 @@ class MainWindow(wx.Frame):
 
 # global name "app"
 app = wx.App(redirect=True)
+
 
 def run():
 

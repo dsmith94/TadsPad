@@ -10,6 +10,9 @@ class Dialog(wx.Dialog):
     def __init__(self):
         wx.Dialog.__init__(self, None, title="Re-configure Library Setup")
 
+        # extensions to skip
+        skip = ("english.t", "grammar.t", "tokens.t")
+
         # get extensions
         path = os.path.join(ProjectFileSystem.get_project_root(), "extensions", "adv3Lite")
         filetree = os.walk(path, True)
@@ -23,7 +26,8 @@ class Dialog(wx.Dialog):
                     for subroot, subdir, subfiles in subpath:
                         for f in subfiles:
                             if f[-2:] == '.t':
-                                extensions.append(os.path.join(d, f[:-2]))
+                                if f not in skip:
+                                    extensions.append(os.path.join(d, f[:-2]))
 
         # build ui
         screen_geometry = wx.Display().GetGeometry()
@@ -39,6 +43,7 @@ class Dialog(wx.Dialog):
         self.custom = wx.RadioButton(self, -1, 'Custom')
         self.custom.Bind(wx.EVT_RADIOBUTTON, self.custom_checked, id=wx.ID_ANY)
         self.web = wx.CheckBox(self, -1, 'Web Play')
+        self.web.Bind(wx.EVT_CHECKBOX, self.web_checked, id=wx.ID_ANY)
         self.extensions = wx.CheckListBox(self, id=-1, choices=extensions)
         self.extensions.Enabled = False
         box_for_custom.Add(self.custom)
@@ -69,5 +74,16 @@ class Dialog(wx.Dialog):
 
         # when custom checkbox is clicked, ungray (or gray) extensions box
         self.extensions.Enabled = self.custom.GetValue()
+
+    def web_checked(self, event):
+
+        # when web is checked, gray out advLite std t files
+
+        if self.extensions.Enabled:
+            if self.web.GetValue():
+                for index, text in enumerate(self.extensions.GetStrings()):
+                    if '/' not in text:
+                        self.extensions.Check(index, False)
+
 
 __author__ = 'dj'

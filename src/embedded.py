@@ -86,8 +86,7 @@ blank = u"""#charset "us-ascii"
 """
 
 # embedded standard makefile
-makefile = u"""
-# TADS 3 makefile
+makefile = u"""# TADS 3 makefile
 #
 # Warning: this file was mechanically generated.  You may edit this file
 # manually, but your changes might be modified or discarded when
@@ -97,25 +96,18 @@ makefile = u"""
 # discarded, the formatting might be changed, and some option
 # settings might be modified.
 
-
-
 -o $NAME$.t3
 -pre
 -D LANGUAGE=english
 -w1
 -Fy obj -Fo obj
 $LIBRARY$
-
-
 ##sources
 $SOURCE$
-
 """
 
 # embedded web makefile
-web_makefile = u"""
-
-# TADS 3 makefile
+web_makefile = u"""# TADS 3 makefile
 #
 # Warning: this file was mechanically generated.  You may edit this file
 # manually, but your changes might be modified or discarded when
@@ -133,10 +125,8 @@ web_makefile = u"""
 -D TADS_INCLUDE_NET
 -source tadsnet
 $LIBRARY$
-
 ##sources
 $SOURCE$
-
 """
 
 

@@ -95,10 +95,13 @@ def nixrun(the_thread, the_project, compiler, interpreter, script="", flags="", 
         path = os.path.join(the_project.path, the_project.name + ".t3")
 
         # on a non-web game, use the standard open process
+        switch = '-e'
+        if terminal == 'terminator':
+            switch = '-x'
         if not the_project.web:
-            playgame = subprocess.Popen([terminal, '-e', interpreter, '-R', input_path, path], shell=False)
+            playgame = subprocess.Popen([terminal, switch, interpreter, '-R', input_path, path], shell=False)
         else:
-            playgame = subprocess.Popen([terminal, '-e', interpreter, '-N', '44', path], shell=False)
+            playgame = subprocess.Popen([terminal, switch, interpreter, '-N', '44', path], shell=False)
     else:
         wx.CallAfter(MessageSystem.show_errors, output)
 

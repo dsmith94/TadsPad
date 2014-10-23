@@ -473,6 +473,9 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # make string to send to the stc autocompletion box
         # note - separator betwixt keywords in final string is a ^
         present_word = self.get_word()
+        if present_word == u"true" or present_word == u"nil":
+            self.AutoCompCancel()
+            return
         if len(present_word) < 1:
             return
         if "=" in present_word:
