@@ -100,8 +100,8 @@ def __search_line(line, caret):
         return 'objects'
     if u'decorationActions = [' in line:
         return 'actions'
-    if u'return action is in (' in line:
-        return 'actions'
+    #if u'return action is in (' in line:
+    #    return 'actions'
     if u'[' in line and u']' not in line:
         return 'objects'
     if u'=' in line:
@@ -115,8 +115,11 @@ def __search_line(line, caret):
             return 'classes'
     if u':' in line:
         return 'classes'
-    if u'.' in line:
-        return 'properties'
+    if u'.' in line and u')' not in line:
+        if u'(' not in line[line.rfind(u'.'):]:
+            return 'properties'
+    if u'(' in line and u')' not in line:
+        return 'objects'
     return None
 
 

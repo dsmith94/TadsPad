@@ -82,6 +82,14 @@ enclosure_suggestions = ("break", "case", "catch", "case", "continue", "do", "de
                         "property", "replace", "return", "self", "switch", "throw", "token", "true", "try", "while",
                         "end")
 
+# determine if passed string is a number
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 
 class ColorSchemer:
 
@@ -235,7 +243,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         full_line, caret = self.GetCurLine()
 
         # don't add if we're in string or comment
-        anchor_at_style = self.GetStyleAt(self.GetAnchor())
+        anchor_at_style = self.GetStyleAt(self.GetCurrentPos())
         if check_for_plain_style(anchor_at_style) is False:
             return
 
@@ -247,13 +255,22 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             if line > 0:
                 search_line = self.GetLineUTF8(line - 1)
                 if search_line:
-                    if search_line[0] == u'+' or u':' in search_line and search_line[0].isalpha():
-                        if self.no_semicolon():
-                            self.AddText(u"\n;\n")
-                            self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
-                            self.SetAnchor(self.GetAnchor() - 3)
-                            self.SetCurrentPos(self.GetCurrentPos() - 3)
-                        return
+                    if not self.in_standard_code:
+                        if search_line[0] == u'+' or u':' in search_line and search_line[0].isalpha():
+                            if self.no_semicolon():
+                                self.AddText(u"\n;\n")
+                                self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
+                                self.SetAnchor(self.GetAnchor() - 3)
+                                self.SetCurrentPos(self.GetCurrentPos() - 3)
+                            return
+                    else:
+
+                        # autoadd semicolon if missing from last line
+                        if search_line.strip()[-1] != u';':
+                            self.WordLeft()
+                            self.AddText(u";\n")
+                            self.auto_indent()
+                            return
 
             # otherwise, standard auto-indent
             self.auto_indent()
@@ -473,7 +490,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         # make string to send to the stc autocompletion box
         # note - separator betwixt keywords in final string is a ^
         present_word = self.get_word()
-        if present_word == u"true" or present_word == u"nil":
+        if present_word in reserved_words or is_number(present_word):
             self.AutoCompCancel()
             return
         if len(present_word) < 1:
@@ -580,8 +597,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
         [results.extend(s) for s in suggestions]
 
         # always remove objFor stuff for standard coding
-        results = [entry for entry in results if u"objFor" not in entry]
-        return results
+        return [entry for entry in results if u"objFor" not in entry]
 
     def get_word(self):
 
@@ -826,7 +842,7 @@ def word_boundary(char):
 
     if char.isspace():
         return True
-    separators = '.', '[', ']', '{', '}'
+    separators = '.', '[', ']', '{', '}', '<', '>'
     if char in separators:
         return True
     return False
