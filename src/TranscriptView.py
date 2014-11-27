@@ -55,7 +55,6 @@ class TranscriptViewWindow(wx.Frame):
                 break
             index += 1
         process = BuildProcess.CompileGame
-        print script
         BuildProcess.run(process, self.project, self.terp, self.tads3path, script=script, flags=' -v -d ',
                          terminal=self.terminal)
         self.Close()

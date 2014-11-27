@@ -118,8 +118,9 @@ class ColorSchemer:
             dictionary[getattr(wx.stc, color)] = tag
         except AttributeError, a:
 
-            # silent fail on exception, log to console
-            print ("wxPython 3.0 or higher required for " + color)
+            # silent fail on exception - not all version of wxPython support this feature
+            return
+            #print ("wxPython 3.0 or higher required for " + color)
 
     def load_colors(self, filename):
 
@@ -263,14 +264,14 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                                 self.SetAnchor(self.GetAnchor() - 3)
                                 self.SetCurrentPos(self.GetCurrentPos() - 3)
                             return
-                    else:
-
-                        # autoadd semicolon if missing from last line
-                        if search_line.strip()[-1] != u';':
-                            self.WordLeft()
-                            self.AddText(u";\n")
-                            self.auto_indent()
-                            return
+                    #else:
+                    # note = autoadd semicolon not working at the moment
+                    #    # autoadd semicolon if missing from last line
+                    #    if search_line.strip()[-1] != u';':
+                    #        self.WordLeft()
+                    #        self.AddText(u";\n")
+                    #        self.auto_indent()
+                    #        return
 
             # otherwise, standard auto-indent
             self.auto_indent()
@@ -1009,12 +1010,13 @@ def get_inherited(code):
     Retrieve inherited parameters, return if they exist, skip objFors
     """
 
-    # cut out objFors
+    # cut out objFors and whitespace
     clip_to = 0
     for token in (direct_token, indirect_token, accessory_token):
         if token in code:
             clip_to = code.find(u'\n', code.find(token))
     code = code[clip_to:]
+    code = code.replace(u" ", u"")
 
     # now, continue with our regularly shceduled algorithm
     end = code.find(u'){')

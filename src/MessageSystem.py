@@ -47,7 +47,7 @@ def about_box(parent):
 
 class EntryWindow(wx.Dialog):
     def __init__(self, title):
-        wx.Dialog.__init__(self, None, title=title)
+        wx.Dialog.__init__(self, None, title=title, style=wx.CHOICEDLG_STYLE | wx.TAB_TRAVERSAL)
         screen_geometry = wx.Display().GetGeometry()
         width = screen_geometry.Width / 6
         box_master = wx.BoxSizer(wx.VERTICAL)
@@ -65,6 +65,7 @@ class EntryWindow(wx.Dialog):
         self.SetSizer(box_master)
         self.Layout()
         self.Fit()
+        self.entry.SetFocus()
 
 
 def show_message(text):
