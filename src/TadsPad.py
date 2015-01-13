@@ -370,8 +370,13 @@ class MainWindow(wx.Frame):
         # compile and run current tads story
         # to do this, make a new thread
         process = BuildProcess.CompileGame
+        terminal = None
+        try:
+            terminal = self.preferences["terminal"]
+        except:
+            print "No terminal found"
         BuildProcess.run(process, self.project, self.preferences["terp"], self.preferences["tadspath"], flags=' -v -d ',
-                         terminal=self.preferences["terminal"])
+                         terminal=terminal)
 
     def rebuild_project(self, event):
 

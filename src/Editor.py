@@ -216,22 +216,18 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def no_semicolon(self):
 
         """
-        Look for a lack of semicolon, usually after we've just added a class or object
+        Can we auto-add semicolon, after a new class or object? Figure it out here
         """
 
-        # look for semicolon or alphanumeric
         position = self.GetCurrentPos()
-        for c in self.Text[position:-1]:
-            if c == u';':
-
-                # we have semicolon, return false
-                return False
-
-            if not c.isspace():
-
-                # return otherwise if non-white char is found
-                return True
-        return True
+        find_colon = self.Text.find(u':', position)
+        search_until = self.Text[:find_colon].rfind(u'\n')
+        buffer = self.Text[position:search_until]
+        buffer = buffer.strip()
+        if buffer == u'':
+            return True
+        else:
+            return False
 
     def on_char_added(self, event):
 
@@ -259,10 +255,13 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
                     if not self.in_standard_code:
                         if search_line[0] == u'+' or u':' in search_line and search_line[0].isalpha():
                             if self.no_semicolon():
-                                self.AddText(u"\n;\n")
-                                self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
-                                self.SetAnchor(self.GetAnchor() - 3)
-                                self.SetCurrentPos(self.GetCurrentPos() - 3)
+                                if u'Region' and u' Topic' not in search_line:
+                                    self.AddText(u"\n;\n")
+                                    self.SetLineIndentation(line, self.GetLineIndentation(line) + (self.GetIndent() * 1))
+                                    self.SetAnchor(self.GetAnchor() - 3)
+                                    self.SetCurrentPos(self.GetCurrentPos() - 3)
+                                else:
+                                    self.AddText(u";\n")
                             return
                     #else:
                     # note = autoadd semicolon not working at the moment
