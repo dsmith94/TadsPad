@@ -42,10 +42,9 @@ class CheckWindow(wx.Frame):
     def word_activated(self, event):
 
         # change noun under editor selection
-        index = event.GetIndex()
-        text = str(self.results.GetItem(index, 0).GetText())
-        if self.GetSelectedText == self.word:
-            self.ReplaceSelection(text)
+        text = str(event.GetItem().GetText())
+        if self.editor.GetSelectedText() == self.word:
+            self.editor.ReplaceSelection(text)
         self.Close()
 
 

@@ -121,6 +121,14 @@ class MainWindow(wx.Frame):
         except IndexError, e:
             MessageSystem.error("Cannot perform undo action: must have an opened code tab.", e.message)
 
+    def synonym_check(self, event):
+
+        # check thesaurus for selected word
+        try:
+            self.notebook.synonym_check()
+        except IndexError, e:
+            MessageSystem.error("Cannot perform thesaurus action: must have an opened code tab.", e.message)
+
     def cut(self, event):
 
         # clipboard cut

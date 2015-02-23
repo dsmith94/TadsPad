@@ -93,6 +93,13 @@ class Notebook(Aui.AuiNotebook):
         while self.GetPageCount() > 0:
             self.DeletePage(0)
 
+    def synonym_check(self):
+
+        # perform synonym check with selected text
+        index = self.GetSelection()
+        page = self.GetPage(index)
+        page.editor.synonym_check()
+
     def cut(self):
 
         # cut with clipboard

@@ -214,7 +214,6 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # current template
         self.template = None
-        self.synonym_check('check')
 
     def no_semicolon(self):
 
@@ -768,8 +767,8 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
     def synonym_check(self):
 
         # check selected word for synonyms
-        word = self.GetSelectedText
-        if word is None:
+        word = str(self.GetSelectedText())
+        if word.isspace():
             MessageSystem.error(u'Must select text before checking for synonyms', u'No text selected')
             return
         nouns, verbs = syn.check(word)
