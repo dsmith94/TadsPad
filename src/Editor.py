@@ -8,6 +8,7 @@ import codecs
 import atd
 import syn
 import SpellCheckerWindow
+import SynonymChecker
 import MessageSystem
 import os
 import embedded
@@ -213,7 +214,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # current template
         self.template = None
-        synonym_check('check')
+        self.synonym_check('check')
 
     def no_semicolon(self):
 
@@ -764,11 +765,16 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.Text = replaced
             self.EndUndoAction()
 
-    def synonym_check(self, string):
+    def synonym_check(self):
 
-        # check selected word for synonoms
-        syn.check(u'house')
-
+        # check selected word for synonyms
+        word = self.GetSelectedText
+        if word is None:
+            MessageSystem.error(u'Must select text before checking for synonyms', u'No text selected')
+            return
+        nouns, verbs = syn.check(word)
+        w = SynonymChecker.CheckWindow(word, nouns, verbs, self)
+        w.Show()
 
     def spellcheck(self, project):
 
