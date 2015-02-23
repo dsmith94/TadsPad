@@ -6,6 +6,7 @@ import TadsParser
 import re
 import codecs
 import atd
+import syn
 import SpellCheckerWindow
 import MessageSystem
 import os
@@ -212,6 +213,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # current template
         self.template = None
+        synonym_check('check')
 
     def no_semicolon(self):
 
@@ -761,6 +763,12 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.BeginUndoAction()
             self.Text = replaced
             self.EndUndoAction()
+
+    def synonym_check(self, string):
+
+        # check selected word for synonoms
+        syn.check(u'house')
+
 
     def spellcheck(self, project):
 
