@@ -38,6 +38,7 @@ class Box(wx.Dialog):
         box_for_buttons.Add(ok_button, 0, wx.ALL, border=screen_geometry.Width / 100)
         box_for_buttons.Add(cancel_button, 0, wx.ALL, border=screen_geometry.Width / 100)
         contents.Add(box_for_buttons)
+        contents.SetSizeHints(self)
         self.SetSizer(contents)
         self.Fit()
 

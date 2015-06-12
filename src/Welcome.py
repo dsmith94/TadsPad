@@ -13,6 +13,7 @@ def get_tips():
     random.shuffle(tips)
     return "Tip of the day: \n" + tips[0]
 
+
 class Box(wx.Dialog):
     def __init__(self, preferences):
         wx.Dialog.__init__(self, None, title="Welcome to TadsPad!")
@@ -23,7 +24,7 @@ class Box(wx.Dialog):
         # create welcome to tads box
         screen_geometry = wx.Display().GetGeometry()
         self.width = screen_geometry.Width / 2
-        self.height = screen_geometry.Width / 2
+        self.height = screen_geometry.Height
         contents = wx.BoxSizer(wx.VERTICAL)
         box_for_buttons = wx.BoxSizer(wx.HORIZONTAL)
         tips_box = wx.StaticText(parent=self, label=get_tips())
@@ -37,12 +38,15 @@ class Box(wx.Dialog):
         tutorial_button = wx.Button(self, wx.ID_HELP, "&User Guide")
         tutorial_button.Bind(wx.EVT_BUTTON, self.shutdown, id=wx.ID_HELP)
         contents.Add(tips_box, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
-        box_for_buttons.Add(new_button, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
+        box_for_buttons.Add(new_button, 9, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
         box_for_buttons.Add(open_button, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
         box_for_buttons.Add(tutorial_button, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
         contents.Add(box_for_buttons, 0, wx.EXPAND | wx.ALL, border=screen_geometry.Width / 100)
+        contents.SetSizeHints(self)
         self.SetSizer(contents)
+        self.SetAutoLayout(True)
         self.Fit()
+        self.Update()
 
     def shutdown(self, event):
 
