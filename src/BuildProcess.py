@@ -96,7 +96,7 @@ def nixrun(the_thread, the_project, compiler, interpreter, script="", flags="", 
 
         # on a non-web game, use the standard open process
         switch = '-e'
-        if terminal == 'terminator':
+        if terminal == 'terminator' or terminal == 'gnome-terminal':
             switch = '-x'
         if not the_project.web:
             playgame = subprocess.Popen([terminal, switch, interpreter, '-R', input_path, path], shell=False)
