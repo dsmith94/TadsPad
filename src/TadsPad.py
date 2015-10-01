@@ -630,6 +630,7 @@ app = wx.App(redirect=True)
 def run():
 
     # run main window (top)
+    os.environ['LIBOVERLAY_SCROLLBAR'] = '0'
     top = MainWindow("TadsPad")
     top.Show()
     top.Maximize(True)   # full screen!!!

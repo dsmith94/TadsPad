@@ -294,6 +294,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             new_position = self.PositionFromLine(line) - 1
             self.SetAnchor(new_position)
             self.SetCurrentPos(new_position)
+            self.Update()
 
         # handle autocompletion too
         if key not in cancel_codes:
@@ -302,15 +303,15 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
             self.AutoCompCancel()
 
         # when quotes added, autoadd quotes
-        if key == 34:
+        #if key == 34:
 
             # handle autoadd quotes differently when in standard coding
-            if self.in_standard_code:
-                self.replace_with_enclosure(u"\" \";")
-                self.SetAnchor(self.GetAnchor() - 1)
-                self.SetCurrentPos(self.GetCurrentPos() - 1)
-            else:
-                self.replace_with_enclosure(u"\" \"")
+        #    if self.in_standard_code:
+        #        self.replace_with_enclosure(u"\" \";")
+        #        self.SetAnchor(self.GetAnchor() - 1)
+        #        self.SetCurrentPos(self.GetCurrentPos() - 1)
+        #    else:
+        #        self.replace_with_enclosure(u"\" \"")
 
         #if event.GetKey() == 39:
         #    self.replace_with_enclosure(u" \'\'")
