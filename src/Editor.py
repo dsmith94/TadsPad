@@ -214,6 +214,7 @@ class EditorCtrl(wx.stc.StyledTextCtrl):
 
         # current template
         self.template = None
+        self.SetUseAntiAliasing(True)
 
     def no_semicolon(self):
 
